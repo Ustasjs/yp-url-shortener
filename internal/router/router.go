@@ -23,5 +23,5 @@ func initRoutes(mux *http.ServeMux) {
 	h := handler.NewHandler(store)
 
 	mux.HandleFunc("/", h.CreateShortURL)
-	mux.HandleFunc("/{id}", h.GetShortURLById)
+	mux.HandleFunc("/{id}", h.GetShortURLByID)
 }
