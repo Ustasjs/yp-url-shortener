@@ -43,7 +43,7 @@ func (h *Handler) CreateShortURL(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (h *Handler) GetShortURLById(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) GetShortURLByID(w http.ResponseWriter, r *http.Request) {
 	if r.Method == http.MethodGet {
 		id := r.PathValue("id")
 		url, err := h.store.Get(id)
