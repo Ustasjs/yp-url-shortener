@@ -46,6 +46,8 @@ func (h *Handler) CreateShortURL(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) GetShortURLByID(w http.ResponseWriter, r *http.Request) {
 	if r.Method == http.MethodGet {
 		id := r.PathValue("id")
+		fmt.Println("id", id)
+		fmt.Println("r.URL.Path", r.URL.Path)
 		url, err := h.store.Get(id)
 		if err != nil {
 			http.Error(w, "url not found", http.StatusNotFound)
