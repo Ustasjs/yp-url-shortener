@@ -5,25 +5,33 @@ import (
 	"Ustasjs/yp-url-shortener/internal/repository"
 	"Ustasjs/yp-url-shortener/internal/service/shortener"
 	"net/http"
+
+	"github.com/go-chi/chi/v5"
+	"github.com/go-chi/chi/v5/middleware"
 )
 
 const port = ":8080"
 
 func StartServer() {
-	mux := http.NewServeMux()
-	initRoutes(mux)
+	r := chi.NewRouter()
+	initMiddleware(r)
+	initRoutes(r)
 
-	err := http.ListenAndServe(port, mux)
+	err := http.ListenAndServe(port, r)
 	if err != nil {
 		panic(err)
 	}
 }
 
-func initRoutes(mux *http.ServeMux) {
+func initRoutes(r *chi.Mux) {
 	store := repository.NewMemStorage()
 	shortener := shortener.NewShortener()
 	h := handler.NewHandler(store, shortener)
 
-	mux.HandleFunc("/", h.CreateShortURL)
-	mux.HandleFunc("/{id}", h.GetShortURLByID)
+	r.Post("/", h.CreateShortURL)
+	r.Get("/{id}", h.GetShortURLByID)
+}
+
+func initMiddleware(r *chi.Mux) {
+	r.Use(middleware.Logger)
 }
