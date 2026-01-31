@@ -5,10 +5,15 @@ type Storage interface {
 	Get(id string) (string, error)
 }
 
-type Handler struct {
-	store Storage
+type Shortener interface {
+	ShortenURL(url string) string
 }
 
-func NewHandler(store Storage) *Handler {
-	return &Handler{store: store}
+type Handler struct {
+	store     Storage
+	shortener Shortener
+}
+
+func NewHandler(store Storage, shortener Shortener) *Handler {
+	return &Handler{store: store, shortener: shortener}
 }

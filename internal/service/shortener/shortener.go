@@ -1,4 +1,4 @@
-package shorten
+package shortener
 
 import "hash/fnv"
 
@@ -28,7 +28,7 @@ func encodeBase62(n uint64) string {
 	return string(result)
 }
 
-func ShortenURL(url string) string {
+func (s *Shortener) ShortenURL(url string) string {
 	hash := hashURL(url)
 	short := encodeBase62(hash)
 
@@ -37,4 +37,10 @@ func ShortenURL(url string) string {
 	}
 
 	return short
+}
+
+type Shortener struct{}
+
+func NewShortener() *Shortener {
+	return &Shortener{}
 }

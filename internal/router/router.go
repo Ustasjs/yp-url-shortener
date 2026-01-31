@@ -3,6 +3,7 @@ package router
 import (
 	"Ustasjs/yp-url-shortener/internal/handler"
 	"Ustasjs/yp-url-shortener/internal/repository"
+	"Ustasjs/yp-url-shortener/internal/service/shortener"
 	"net/http"
 )
 
@@ -20,7 +21,8 @@ func StartServer() {
 
 func initRoutes(mux *http.ServeMux) {
 	store := repository.NewMemStorage()
-	h := handler.NewHandler(store)
+	shortener := shortener.NewShortener()
+	h := handler.NewHandler(store, shortener)
 
 	mux.HandleFunc("/", h.CreateShortURL)
 	mux.HandleFunc("/{id}", h.GetShortURLByID)
