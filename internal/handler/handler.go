@@ -1,13 +1,14 @@
 package handler
 
-import (
-	"Ustasjs/yp-url-shortener/internal/repository"
-)
-
-type Handler struct {
-	store *repository.MemStorage
+type Storage interface {
+	Save(id string, url string)
+	Get(id string) (string, error)
 }
 
-func NewHandler(store *repository.MemStorage) *Handler {
+type Handler struct {
+	store Storage
+}
+
+func NewHandler(store Storage) *Handler {
 	return &Handler{store: store}
 }
