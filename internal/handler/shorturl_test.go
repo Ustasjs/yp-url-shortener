@@ -12,11 +12,11 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-var testShorteUrlId = "test-id"
+var testShorteURLID = "test-id"
 
 type mockShortener struct{}
 
-func (mockShortener) ShortenURL(url string) string { return testShorteUrlId }
+func (mockShortener) ShortenURL(url string) string { return testShorteURLID }
 
 func NewMockShortener() *mockShortener {
 	return &mockShortener{}
@@ -66,7 +66,7 @@ func TestHandler_CreateShortURL(t *testing.T) {
 			r:    httptest.NewRequest(http.MethodPost, "/", strings.NewReader("https://example.com")),
 			want: want{
 				code:        http.StatusCreated,
-				response:    fmt.Sprintf("http://localhost:8080/%s", testShorteUrlId),
+				response:    fmt.Sprintf("http://localhost:8080/%s", testShorteURLID),
 				contentType: "text/plain",
 			},
 		},
