@@ -3,47 +3,36 @@ package flags
 import (
 	"errors"
 	"flag"
-	"fmt"
 	"strings"
 )
 
+type serverAddress string
+
 type Flags struct {
-	ServerAddress *ServerAddress
-}
-
-type ServerAddress struct {
-	Host string
-	Port string
-}
-
-func (a *ServerAddress) String() string {
-	value := fmt.Sprintf("%s:%s", a.Host, a.Port)
-	return value
+	ServerAddress serverAddress
 }
 
 var errorMessage = "invalid server address. Expected format: host:port"
 
-func (a *ServerAddress) Set(flagValue string) error {
-	value := strings.Split(flagValue, ":")
-	if len(value) != 2 {
-		return errors.New(errorMessage)
-	}
-	a.Host = value[0]
-	a.Port = value[1]
-	if a.Host == "" || a.Port == "" {
-		return errors.New(errorMessage)
-	}
-	return nil
-}
-
 func InitFlags() *Flags {
 	flags := new(Flags)
-	serverAddress := &ServerAddress{
-		Host: "localhost",
-		Port: "8080",
-	}
-	flags.ServerAddress = serverAddress
-	flag.Var(serverAddress, "a", "Input server address")
+	var serverAddressValue serverAddress = "localhost:8080"
+	flags.ServerAddress = serverAddressValue
+
+	flag.Func("a", "Input server address", func(flagValue string) error {
+		value := strings.Split(flagValue, ":")
+		if len(value) != 2 {
+			return errors.New(errorMessage)
+		}
+		host := value[0]
+		port := value[1]
+		if host == "" || port == "" {
+			return errors.New(errorMessage)
+		}
+		flags.ServerAddress = serverAddress(flagValue)
+		return nil
+	})
+
 	flag.Parse()
 
 	return flags

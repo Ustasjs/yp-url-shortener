@@ -15,17 +15,13 @@ import (
 func StartServer() {
 	flags := flags.InitFlags()
 
-	host := flags.ServerAddress.Host
-	port := flags.ServerAddress.Port
-	address := fmt.Sprintf("%s:%s", host, port)
-
-	fmt.Println("Starting server on:", address)
+	fmt.Println("Starting server on:", flags.ServerAddress)
 
 	r := chi.NewRouter()
 	initMiddleware(r)
 	initRoutes(r)
 
-	err := http.ListenAndServe(address, r)
+	err := http.ListenAndServe(string(flags.ServerAddress), r)
 	if err != nil {
 		panic(err)
 	}
