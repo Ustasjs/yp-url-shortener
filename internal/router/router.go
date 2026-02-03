@@ -19,7 +19,7 @@ func StartServer() {
 
 	r := chi.NewRouter()
 	initMiddleware(r)
-	initRoutes(r)
+	initRoutes(r, flags)
 
 	err := http.ListenAndServe(string(flags.ServerAddress), r)
 	if err != nil {
@@ -27,10 +27,10 @@ func StartServer() {
 	}
 }
 
-func initRoutes(r *chi.Mux) {
+func initRoutes(r *chi.Mux, f *flags.Flags) {
 	store := repository.NewMemStorage()
 	shortener := shortener.NewShortener()
-	h := handler.NewHandler(store, shortener)
+	h := handler.NewHandler(store, shortener, f)
 
 	r.Post("/", h.CreateShortURL)
 	r.Get("/{id}", h.GetShortURLByID)

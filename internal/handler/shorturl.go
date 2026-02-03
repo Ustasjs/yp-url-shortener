@@ -1,12 +1,18 @@
 package handler
 
 import (
+	"Ustasjs/yp-url-shortener/internal/config/flags"
 	"fmt"
 	"io"
 	"net/http"
 	"net/url"
 	"strings"
 )
+
+func makeShortURL(id string, baseURL flags.BaseURL) string {
+	base := strings.TrimSuffix(string(baseURL), "/")
+	return fmt.Sprintf("%s/%s", base, id)
+}
 
 func (h *Handler) CreateShortURL(w http.ResponseWriter, r *http.Request) {
 	if r.Method == http.MethodPost {
@@ -31,7 +37,7 @@ func (h *Handler) CreateShortURL(w http.ResponseWriter, r *http.Request) {
 
 		w.Header().Set("Content-Type", "text/plain")
 		w.WriteHeader(http.StatusCreated)
-		_, err = w.Write([]byte(fmt.Sprintf("http://localhost:8080/%s", id)))
+		_, err = w.Write([]byte(makeShortURL(id, h.flags.BaseURL)))
 		if err != nil {
 			http.Error(w, "internal server error", http.StatusInternalServerError)
 			return
