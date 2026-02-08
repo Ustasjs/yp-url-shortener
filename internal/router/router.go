@@ -5,8 +5,9 @@ import (
 	"Ustasjs/yp-url-shortener/internal/handler"
 	"Ustasjs/yp-url-shortener/internal/repository"
 	"Ustasjs/yp-url-shortener/internal/service/shortener"
-	"fmt"
+	"log"
 	"net/http"
+	"time"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
@@ -15,13 +16,22 @@ import (
 func StartServer() {
 	flags := flags.InitFlags()
 
-	fmt.Println("Starting server on:", flags.ServerAddress)
+	log.Println("Starting server on:", flags.ServerAddress)
 
 	r := chi.NewRouter()
 	initMiddleware(r)
 	initRoutes(r, flags)
 
-	err := http.ListenAndServe(string(flags.ServerAddress), r)
+	srv := &http.Server{
+		Addr:              string(flags.ServerAddress),
+		Handler:           r,
+		ReadHeaderTimeout: 5 * time.Second,
+		ReadTimeout:       10 * time.Second,
+		WriteTimeout:      10 * time.Second,
+		IdleTimeout:       120 * time.Second,
+	}
+
+	err := srv.ListenAndServe()
 	if err != nil {
 		panic(err)
 	}
