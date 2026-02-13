@@ -1,7 +1,7 @@
 package router
 
 import (
-	"Ustasjs/yp-url-shortener/internal/config/flags"
+	"Ustasjs/yp-url-shortener/internal/config/settings"
 	"Ustasjs/yp-url-shortener/internal/handler"
 	"Ustasjs/yp-url-shortener/internal/repository"
 	"Ustasjs/yp-url-shortener/internal/service/shortener"
@@ -14,16 +14,16 @@ import (
 )
 
 func StartServer() {
-	flags := flags.InitFlags()
+	settings := settings.InitSettings()
 
-	log.Println("Starting server on:", flags.ServerAddress)
+	log.Println("Starting server on:", settings.ServerAddress)
 
 	r := chi.NewRouter()
 	initMiddleware(r)
-	initRoutes(r, flags)
+	initRoutes(r, settings)
 
 	srv := &http.Server{
-		Addr:              string(flags.ServerAddress),
+		Addr:              string(settings.ServerAddress),
 		Handler:           r,
 		ReadHeaderTimeout: 5 * time.Second,
 		ReadTimeout:       10 * time.Second,
@@ -37,10 +37,10 @@ func StartServer() {
 	}
 }
 
-func initRoutes(r *chi.Mux, f *flags.Flags) {
+func initRoutes(r *chi.Mux, s *settings.Settings) {
 	store := repository.NewMemStorage()
 	shortener := shortener.NewShortener()
-	h := handler.NewHandler(store, shortener, f)
+	h := handler.NewHandler(store, shortener, s)
 
 	r.Post("/", h.CreateShortURL)
 	r.Get("/{id}", h.GetShortURLByID)

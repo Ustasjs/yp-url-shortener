@@ -1,7 +1,7 @@
 package handler_test
 
 import (
-	"Ustasjs/yp-url-shortener/internal/config/flags"
+	"Ustasjs/yp-url-shortener/internal/config/settings"
 	"Ustasjs/yp-url-shortener/internal/handler"
 	"Ustasjs/yp-url-shortener/internal/repository"
 	"fmt"
@@ -23,10 +23,10 @@ func NewMockShortener() *mockShortener {
 	return &mockShortener{}
 }
 
-func NewMockFlags() *flags.Flags {
-	return &flags.Flags{
-		ServerAddress: flags.ServerAddress("localhost:8080"),
-		BaseURL:       flags.BaseURL("http://localhost:8080"),
+func NewMockSettings() *settings.Settings {
+	return &settings.Settings{
+		ServerAddress: settings.ServerAddress("localhost:8080"),
+		BaseURL:       settings.BaseURL("http://localhost:8080"),
 	}
 }
 
@@ -84,8 +84,8 @@ func TestHandler_CreateShortURL(t *testing.T) {
 			store := repository.NewMemStorage()
 			mux := http.NewServeMux()
 			shortener := NewMockShortener()
-			flags := NewMockFlags()
-			h := handler.NewHandler(store, shortener, flags)
+			settings := NewMockSettings()
+			h := handler.NewHandler(store, shortener, settings)
 			mux.HandleFunc("/", h.CreateShortURL)
 
 			rr := httptest.NewRecorder()
@@ -150,8 +150,8 @@ func TestHandler_GetShortURLByID(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			mux := http.NewServeMux()
 			shortener := NewMockShortener()
-			flags := NewMockFlags()
-			h := handler.NewHandler(tt.store, shortener, flags)
+			settings := NewMockSettings()
+			h := handler.NewHandler(tt.store, shortener, settings)
 			mux.HandleFunc("/{id}", h.GetShortURLByID)
 
 			rr := httptest.NewRecorder()

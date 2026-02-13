@@ -1,4 +1,4 @@
-package flags
+package settings
 
 import (
 	"errors"
@@ -10,27 +10,27 @@ import (
 type ServerAddress string
 type BaseURL string
 
-type Flags struct {
+type Settings struct {
 	ServerAddress ServerAddress
 	BaseURL       BaseURL
 }
 
-func InitFlags() *Flags {
-	flags := new(Flags)
+func InitSettings() *Settings {
+	settings := new(Settings)
 
-	initServerAddress(flags)
-	initBaseURL(flags)
+	initServerAddress(settings)
+	initBaseURL(settings)
 
 	flag.Parse()
 
-	return flags
+	return settings
 }
 
 var errorMessageServerAddress = "invalid server address. Expected format: host:port"
 
-func initServerAddress(flags *Flags) {
+func initServerAddress(settings *Settings) {
 	var serverAddressValue ServerAddress = "localhost:8080"
-	flags.ServerAddress = serverAddressValue
+	settings.ServerAddress = serverAddressValue
 
 	flag.Func("a", "Input server address", func(flagValue string) error {
 		value := strings.Split(flagValue, ":")
@@ -42,16 +42,16 @@ func initServerAddress(flags *Flags) {
 		if host == "" || port == "" {
 			return errors.New(errorMessageServerAddress)
 		}
-		flags.ServerAddress = ServerAddress(flagValue)
+		settings.ServerAddress = ServerAddress(flagValue)
 		return nil
 	})
 }
 
 var errorMessageBaseURL = "invalid base url. Expected format: http://host:port"
 
-func initBaseURL(flags *Flags) {
+func initBaseURL(settings *Settings) {
 	var baseURLvalue BaseURL = "http://localhost:8080"
-	flags.BaseURL = baseURLvalue
+	settings.BaseURL = baseURLvalue
 
 	flag.Func("b", "Input base url", func(flagValue string) error {
 		parsedURL, err := url.ParseRequestURI(flagValue)
@@ -60,7 +60,7 @@ func initBaseURL(flags *Flags) {
 			return errors.New(errorMessageBaseURL)
 		}
 
-		flags.BaseURL = BaseURL(flagValue)
+		settings.BaseURL = BaseURL(flagValue)
 		return nil
 	})
 }
