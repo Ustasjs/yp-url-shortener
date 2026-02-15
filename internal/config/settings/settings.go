@@ -6,6 +6,8 @@ import (
 	"net/url"
 	"os"
 	"strings"
+
+	"go.uber.org/zap"
 )
 
 type ServerAddress string
@@ -14,6 +16,7 @@ type BaseURL string
 type Settings struct {
 	ServerAddress ServerAddress
 	BaseURL       BaseURL
+	LogLevel      zap.AtomicLevel
 }
 
 func InitSettings() *Settings {
@@ -21,6 +24,7 @@ func InitSettings() *Settings {
 
 	initServerAddress(settings)
 	initBaseURL(settings)
+	initLogLevel(settings)
 
 	flag.Parse()
 
@@ -94,5 +98,29 @@ func initBaseURL(settings *Settings) {
 			panic(err)
 		}
 		settings.BaseURL = BaseURL(envBaseURL)
+	}
+}
+
+func initLogLevel(settings *Settings) {
+	var logLevelValue = zap.NewAtomicLevel()
+	settings.LogLevel = logLevelValue
+
+	flag.Func("l", "Input log level", func(flagValue string) error {
+		lvl, err := zap.ParseAtomicLevel(flagValue)
+		if err != nil {
+			panic(err)
+		}
+
+		settings.LogLevel = lvl
+		return nil
+	})
+
+	if envLogLevel := os.Getenv("LOG_LEVEL"); envLogLevel != "" {
+		lvl, err := zap.ParseAtomicLevel(envLogLevel)
+		if err != nil {
+			panic(err)
+		}
+
+		settings.LogLevel = lvl
 	}
 }
