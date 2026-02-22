@@ -2,6 +2,9 @@ package handler
 
 import (
 	"Ustasjs/yp-url-shortener/internal/config/settings"
+	"Ustasjs/yp-url-shortener/internal/logger"
+	"Ustasjs/yp-url-shortener/internal/model"
+	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
@@ -59,5 +62,43 @@ func (h *Handler) GetShortURLByID(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, url, http.StatusTemporaryRedirect)
 	} else {
 		http.Error(w, "Only GET requests are allowed", http.StatusBadRequest)
+	}
+}
+
+func (h *Handler) CreateShortURLJSONApi(w http.ResponseWriter, r *http.Request) {
+	if r.Method == http.MethodPost {
+		decoder := json.NewDecoder(r.Body)
+
+		var request model.CreateShortURLRequest
+		if err := decoder.Decode(&request); err != nil {
+			logger.Log.Error(err.Error())
+			http.Error(w, "cannot decode request JSON body", http.StatusBadRequest)
+			return
+		}
+
+		parsedURL, err := url.ParseRequestURI(request.URL)
+		if err != nil || parsedURL.Scheme == "" || parsedURL.Host == "" {
+			http.Error(w, "invalid url", http.StatusBadRequest)
+			return
+		}
+
+		id := h.shortener.ShortenURL(parsedURL.String())
+		h.store.Save(id, parsedURL.String())
+
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusCreated)
+
+		responce := model.CreateShortURLResponce{
+			Result: makeShortURL(id, h.settings.BaseURL),
+		}
+		encoder := json.NewEncoder(w)
+		if err := encoder.Encode(&responce); err != nil {
+			logger.Log.Error(err.Error())
+			http.Error(w, "error encoding response", http.StatusBadRequest)
+			return
+		}
+		return
+	} else {
+		http.Error(w, "Only POST requests are allowed", http.StatusBadRequest)
 	}
 }

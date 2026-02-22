@@ -45,6 +45,8 @@ func initRoutes(r *chi.Mux, s *settings.Settings) {
 
 	r.Post("/", h.CreateShortURL)
 	r.Get("/{id}", h.GetShortURLByID)
+
+	r.Post("/api/shorten", h.CreateShortURLJSONApi)
 }
 
 func initMiddleware(r *chi.Mux) {
