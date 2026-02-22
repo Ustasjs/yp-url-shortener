@@ -164,3 +164,72 @@ func TestHandler_GetShortURLByID(t *testing.T) {
 		})
 	}
 }
+
+func TestHandler_CreateShortURLJSONApi(t *testing.T) {
+	type want struct {
+		code        int
+		response    string
+		contentType string
+	}
+
+	tests := []struct {
+		name string
+		r    *http.Request
+		want want
+	}{
+		{
+			name: "check request with invalid method",
+			r:    httptest.NewRequest(http.MethodGet, "/api/shorten", nil),
+			want: want{
+				code:        http.StatusBadRequest,
+				response:    "Only POST requests are allowed\n",
+				contentType: "text/plain; charset=utf-8",
+			},
+		},
+		{
+			name: "check post request with no body",
+			r:    httptest.NewRequest(http.MethodPost, "/api/shorten", nil),
+			want: want{
+				code:        http.StatusBadRequest,
+				response:    "cannot decode request JSON body\n",
+				contentType: "text/plain; charset=utf-8",
+			},
+		},
+		{
+			name: "check post request with invalid body",
+			r:    httptest.NewRequest(http.MethodPost, "/api/shorten", strings.NewReader("invalid body")),
+			want: want{
+				code:        http.StatusBadRequest,
+				response:    "cannot decode request JSON body\n",
+				contentType: "text/plain; charset=utf-8",
+			},
+		},
+		{
+			name: "check post request with valid body",
+			r:    httptest.NewRequest(http.MethodPost, "/api/shorten", strings.NewReader("{ \"url\": \"https://practicum.yandex.ru/\"}")),
+			want: want{
+				code:        http.StatusCreated,
+				response:    fmt.Sprintf("{\"result\":\"http://localhost:8080/%s\"}\n", testShorteURLID),
+				contentType: "application/json",
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			store := repository.NewMemStorage()
+			mux := http.NewServeMux()
+			shortener := NewMockShortener()
+			settings := NewMockSettings()
+			h := handler.NewHandler(store, shortener, settings)
+			mux.HandleFunc("/api/shorten", h.CreateShortURLJSONApi)
+
+			rr := httptest.NewRecorder()
+
+			mux.ServeHTTP(rr, tt.r)
+
+			assert.Equal(t, tt.want.code, rr.Code)
+			assert.Equal(t, tt.want.response, rr.Body.String())
+			assert.Equal(t, tt.want.contentType, rr.Header().Get("Content-Type"))
+		})
+	}
+}
