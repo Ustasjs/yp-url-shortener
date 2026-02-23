@@ -6,10 +6,12 @@ import (
 	"Ustasjs/yp-url-shortener/internal/logger"
 	"Ustasjs/yp-url-shortener/internal/repository"
 	"Ustasjs/yp-url-shortener/internal/service/shortener"
+	"compress/gzip"
 	"net/http"
 	"time"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/go-chi/chi/v5/middleware"
 	"go.uber.org/zap"
 )
 
@@ -51,4 +53,5 @@ func initRoutes(r *chi.Mux, s *settings.Settings) {
 
 func initMiddleware(r *chi.Mux) {
 	r.Use(logger.LoggerMiddleware)
+	r.Use(middleware.Compress(gzip.DefaultCompression))
 }
