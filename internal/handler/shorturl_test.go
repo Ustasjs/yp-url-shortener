@@ -3,7 +3,10 @@ package handler_test
 import (
 	"Ustasjs/yp-url-shortener/internal/config/settings"
 	"Ustasjs/yp-url-shortener/internal/handler"
+	customMiddleware "Ustasjs/yp-url-shortener/internal/middleware"
 	"Ustasjs/yp-url-shortener/internal/repository"
+	"bytes"
+	"compress/gzip"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
@@ -232,4 +235,31 @@ func TestHandler_CreateShortURLJSONApi(t *testing.T) {
 			assert.Equal(t, tt.want.contentType, rr.Header().Get("Content-Type"))
 		})
 	}
+}
+
+func TestHandler_CreateShortURL_Gzip(t *testing.T) {
+	var buf bytes.Buffer
+	gz := gzip.NewWriter(&buf)
+	_, err := gz.Write([]byte("https://example.com"))
+	assert.NoError(t, err)
+	assert.NoError(t, gz.Close())
+
+	r := httptest.NewRequest(http.MethodPost, "/", &buf)
+	r.Header.Set("Content-Encoding", "gzip")
+
+	store := repository.NewMemStorage()
+	mux := http.NewServeMux()
+	shortener := NewMockShortener()
+	settings := NewMockSettings()
+	h := handler.NewHandler(store, shortener, settings)
+
+	wrapped := customMiddleware.GzipDecompress(http.HandlerFunc(h.CreateShortURL))
+	mux.Handle("/", wrapped)
+
+	rr := httptest.NewRecorder()
+	mux.ServeHTTP(rr, r)
+
+	assert.Equal(t, http.StatusCreated, rr.Code)
+	assert.Equal(t, fmt.Sprintf("http://localhost:8080/%s", testShorteURLID), rr.Body.String())
+	assert.Equal(t, "text/plain", rr.Header().Get("Content-Type"))
 }

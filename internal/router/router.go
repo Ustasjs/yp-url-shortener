@@ -4,6 +4,7 @@ import (
 	"Ustasjs/yp-url-shortener/internal/config/settings"
 	"Ustasjs/yp-url-shortener/internal/handler"
 	"Ustasjs/yp-url-shortener/internal/logger"
+	customMiddleware "Ustasjs/yp-url-shortener/internal/middleware"
 	"Ustasjs/yp-url-shortener/internal/repository"
 	"Ustasjs/yp-url-shortener/internal/service/shortener"
 	"compress/gzip"
@@ -53,5 +54,6 @@ func initRoutes(r *chi.Mux, s *settings.Settings) {
 
 func initMiddleware(r *chi.Mux) {
 	r.Use(logger.LoggerMiddleware)
+	r.Use(customMiddleware.GzipDecompress)
 	r.Use(middleware.Compress(gzip.DefaultCompression))
 }
