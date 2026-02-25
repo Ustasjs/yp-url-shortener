@@ -42,7 +42,7 @@ func StartServer() {
 }
 
 func initRoutes(r *chi.Mux, s *settings.Settings) {
-	store := repository.NewMemStorage()
+	store := repository.NewMemStorage(string(s.FileStoragePath))
 	shortener := shortener.NewShortener()
 	h := handler.NewHandler(store, shortener, s)
 

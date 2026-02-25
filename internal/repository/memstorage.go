@@ -1,7 +1,10 @@
 package repository
 
 import (
+	"Ustasjs/yp-url-shortener/internal/logger"
+	"encoding/json"
 	"errors"
+	"os"
 	"sync"
 )
 
@@ -10,18 +13,28 @@ type URLRecord struct {
 }
 
 type MemStorage struct {
-	mu      sync.RWMutex
-	storage map[string]URLRecord
+	mu       sync.RWMutex
+	storage  map[string]URLRecord
+	filePath string
 }
 
-func NewMemStorage() *MemStorage {
-	return &MemStorage{storage: make(map[string]URLRecord)}
+func NewMemStorage(filePath string) *MemStorage {
+	storage := &MemStorage{storage: make(map[string]URLRecord), filePath: filePath}
+	err := storage.LoadFromFile()
+	if err != nil {
+		logger.Log.Error(err.Error())
+	}
+	return storage
 }
 
 func (s *MemStorage) Save(id string, url string) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	s.storage[id] = URLRecord{URL: url}
+	err := s.SaveToFile()
+	if err != nil {
+		logger.Log.Error(err.Error())
+	}
 }
 
 var ErrRecordNotFound = errors.New("record not found")
@@ -34,4 +47,35 @@ func (s *MemStorage) Get(id string) (string, error) {
 		return "", ErrRecordNotFound
 	}
 	return record.URL, nil
+}
+
+func (s *MemStorage) SaveToFile() error {
+	data, err := json.Marshal(s.storage)
+	if err != nil {
+		return err
+	}
+	err = os.WriteFile(s.filePath, data, 0666)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (s *MemStorage) LoadFromFile() error {
+	_, err := os.Stat(s.filePath)
+	if errors.Is(err, os.ErrNotExist) {
+		logger.Log.Info("storage file not found")
+		return nil
+	}
+
+	data, err := os.ReadFile(s.filePath)
+	if err != nil {
+		return err
+	}
+	err = json.Unmarshal(data, &s.storage)
+	if err != nil {
+		return err
+	}
+	return nil
 }

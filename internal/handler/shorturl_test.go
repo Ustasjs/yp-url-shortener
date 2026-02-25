@@ -17,6 +17,7 @@ import (
 )
 
 var testShorteURLID = "test-id"
+var testFilePath = "./test.json"
 
 type mockShortener struct{}
 
@@ -84,7 +85,7 @@ func TestHandler_CreateShortURL(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			store := repository.NewMemStorage()
+			store := repository.NewMemStorage(testFilePath)
 			mux := http.NewServeMux()
 			shortener := NewMockShortener()
 			settings := NewMockSettings()
@@ -109,7 +110,7 @@ func TestHandler_GetShortURLByID(t *testing.T) {
 		contentType string
 	}
 
-	store := repository.NewMemStorage()
+	store := repository.NewMemStorage(testFilePath)
 	store.Save("123", "https://example.com")
 
 	tests := []struct {
@@ -120,7 +121,7 @@ func TestHandler_GetShortURLByID(t *testing.T) {
 	}{
 		{
 			name:  "check get request with invalid method",
-			store: repository.NewMemStorage(),
+			store: repository.NewMemStorage(testFilePath),
 			r:     httptest.NewRequest(http.MethodPost, "/123", nil),
 			want: want{
 				code:        http.StatusBadRequest,
@@ -219,7 +220,7 @@ func TestHandler_CreateShortURLJSONApi(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			store := repository.NewMemStorage()
+			store := repository.NewMemStorage(testFilePath)
 			mux := http.NewServeMux()
 			shortener := NewMockShortener()
 			settings := NewMockSettings()
@@ -247,7 +248,7 @@ func TestHandler_CreateShortURL_Gzip(t *testing.T) {
 	r := httptest.NewRequest(http.MethodPost, "/", &buf)
 	r.Header.Set("Content-Encoding", "gzip")
 
-	store := repository.NewMemStorage()
+	store := repository.NewMemStorage(testFilePath)
 	mux := http.NewServeMux()
 	shortener := NewMockShortener()
 	settings := NewMockSettings()
