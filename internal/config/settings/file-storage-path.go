@@ -37,7 +37,7 @@ func initFileStoragePath(settings *Settings) {
 	var fileStoragePathValue FileStoragePath = "./file_storage.json"
 	settings.FileStoragePath = fileStoragePathValue
 
-	flag.Func("p", "Input file storage path", func(flagValue string) error {
+	flag.Func("f", "Input file storage path", func(flagValue string) error {
 		err := validateFileStoragePath(flagValue)
 		if err != nil {
 			return err
