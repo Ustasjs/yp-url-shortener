@@ -1,46 +1,36 @@
 package shortener
 
-import "hash/fnv"
+import (
+	"Ustasjs/yp-url-shortener/internal/config/settings"
+	"fmt"
+	"strings"
+)
 
-func hashURL(s string) uint64 {
-	h := fnv.New64a()
-	h.Write([]byte(s))
-	return h.Sum64()
+type Storage interface {
+	Save(id string, url string)
+	Get(id string) (string, error)
 }
 
-const alphabet = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
-
-func encodeBase62(n uint64) string {
-	if n == 0 {
-		return string(alphabet[0])
-	}
-
-	var result []byte
-	for n > 0 {
-		result = append(result, alphabet[n%62])
-		n /= 62
-	}
-
-	for i, j := 0, len(result)-1; i < j; i, j = i+1, j-1 {
-		result[i], result[j] = result[j], result[i]
-	}
-
-	return string(result)
+type Shortener struct {
+	repo    Storage
+	baseURL settings.BaseURL
 }
 
-func (s *Shortener) ShortenURL(url string) string {
-	hash := hashURL(url)
-	short := encodeBase62(hash)
-
-	if len(short) > 8 {
-		short = short[:8]
+func NewShortener(repo Storage, baseURL settings.BaseURL) *Shortener {
+	return &Shortener{
+		repo,
+		baseURL,
 	}
-
-	return short
 }
 
-type Shortener struct{}
+func (s *Shortener) CreateShortURL(originalURL string) string {
+	id := shortenURL(originalURL)
+	s.repo.Save(id, originalURL)
 
-func NewShortener() *Shortener {
-	return &Shortener{}
+	base := strings.TrimSuffix(string(s.baseURL), "/")
+	return fmt.Sprintf("%s/%s", base, id)
+}
+
+func (s *Shortener) GetOriginalURL(id string) (string, error) {
+	return s.repo.Get(id)
 }

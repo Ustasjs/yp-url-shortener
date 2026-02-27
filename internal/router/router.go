@@ -1,29 +1,36 @@
 package router
 
 import (
-	"Ustasjs/yp-url-shortener/internal/config/flags"
+	"Ustasjs/yp-url-shortener/internal/config/settings"
 	"Ustasjs/yp-url-shortener/internal/handler"
+	"Ustasjs/yp-url-shortener/internal/logger"
+	customMiddleware "Ustasjs/yp-url-shortener/internal/middleware"
 	"Ustasjs/yp-url-shortener/internal/repository"
 	"Ustasjs/yp-url-shortener/internal/service/shortener"
-	"log"
+	"compress/gzip"
 	"net/http"
 	"time"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
+	"go.uber.org/zap"
 )
 
 func StartServer() {
-	flags := flags.InitFlags()
+	settingsMap := settings.InitSettings()
+	loggerErr := logger.Initialize(settingsMap.LogLevel)
+	if loggerErr != nil {
+		panic(loggerErr)
+	}
 
-	log.Println("Starting server on:", flags.ServerAddress)
+	logger.Log.Info("Starting server on:", zap.String("address", string(settingsMap.ServerAddress)))
 
 	r := chi.NewRouter()
 	initMiddleware(r)
-	initRoutes(r, flags)
+	initRoutes(r, settingsMap)
 
 	srv := &http.Server{
-		Addr:              string(flags.ServerAddress),
+		Addr:              string(settingsMap.ServerAddress),
 		Handler:           r,
 		ReadHeaderTimeout: 5 * time.Second,
 		ReadTimeout:       10 * time.Second,
@@ -37,15 +44,19 @@ func StartServer() {
 	}
 }
 
-func initRoutes(r *chi.Mux, f *flags.Flags) {
-	store := repository.NewMemStorage()
-	shortener := shortener.NewShortener()
-	h := handler.NewHandler(store, shortener, f)
+func initRoutes(r *chi.Mux, s *settings.Settings) {
+	store := repository.NewMemStorage(string(s.FileStoragePath))
+	shortenerService := shortener.NewShortener(store, s.BaseURL)
+	h := handler.NewHandler(shortenerService)
 
 	r.Post("/", h.CreateShortURL)
 	r.Get("/{id}", h.GetShortURLByID)
+
+	r.Post("/api/shorten", h.CreateShortURLJSONApi)
 }
 
 func initMiddleware(r *chi.Mux) {
-	r.Use(middleware.Logger)
+	r.Use(logger.LoggerMiddleware)
+	r.Use(customMiddleware.GzipDecompress)
+	r.Use(middleware.Compress(gzip.DefaultCompression))
 }
