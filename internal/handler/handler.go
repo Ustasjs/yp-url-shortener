@@ -1,24 +1,14 @@
 package handler
 
-import (
-	"Ustasjs/yp-url-shortener/internal/config/settings"
-)
-
-type Storage interface {
-	Save(id string, url string)
-	Get(id string) (string, error)
-}
-
 type Shortener interface {
-	ShortenURL(url string) string
+	CreateShortURL(originalURL string) string
+	GetOriginalURL(id string) (string, error)
 }
 
 type Handler struct {
-	store     Storage
 	shortener Shortener
-	settings  *settings.Settings
 }
 
-func NewHandler(store Storage, shortener Shortener, settings *settings.Settings) *Handler {
-	return &Handler{store: store, shortener: shortener, settings: settings}
+func NewHandler(shortener Shortener) *Handler {
+	return &Handler{shortener: shortener}
 }

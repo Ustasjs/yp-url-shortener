@@ -1,21 +1,14 @@
 package handler
 
 import (
-	"Ustasjs/yp-url-shortener/internal/config/settings"
 	"Ustasjs/yp-url-shortener/internal/logger"
 	"Ustasjs/yp-url-shortener/internal/model"
 	"encoding/json"
-	"fmt"
 	"io"
 	"net/http"
 	"net/url"
 	"strings"
 )
-
-func makeShortURL(id string, baseURL settings.BaseURL) string {
-	base := strings.TrimSuffix(string(baseURL), "/")
-	return fmt.Sprintf("%s/%s", base, id)
-}
 
 func (h *Handler) CreateShortURL(w http.ResponseWriter, r *http.Request) {
 	if r.Method == http.MethodPost {
@@ -35,12 +28,11 @@ func (h *Handler) CreateShortURL(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		id := h.shortener.ShortenURL(parsedURL.String())
-		h.store.Save(id, parsedURL.String())
+		shortUrl := h.shortener.CreateShortURL(parsedURL.String())
 
 		w.Header().Set("Content-Type", "text/plain")
 		w.WriteHeader(http.StatusCreated)
-		_, err = w.Write([]byte(makeShortURL(id, h.settings.BaseURL)))
+		_, err = w.Write([]byte(shortUrl))
 		if err != nil {
 			http.Error(w, "internal server error", http.StatusInternalServerError)
 			return
@@ -54,12 +46,12 @@ func (h *Handler) CreateShortURL(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) GetShortURLByID(w http.ResponseWriter, r *http.Request) {
 	if r.Method == http.MethodGet {
 		id := r.PathValue("id")
-		url, err := h.store.Get(id)
+		originalUrl, err := h.shortener.GetOriginalURL(id)
 		if err != nil {
 			http.Error(w, "url not found", http.StatusNotFound)
 			return
 		}
-		http.Redirect(w, r, url, http.StatusTemporaryRedirect)
+		http.Redirect(w, r, originalUrl, http.StatusTemporaryRedirect)
 	} else {
 		http.Error(w, "Only GET requests are allowed", http.StatusBadRequest)
 	}
@@ -82,14 +74,13 @@ func (h *Handler) CreateShortURLJSONApi(w http.ResponseWriter, r *http.Request) 
 			return
 		}
 
-		id := h.shortener.ShortenURL(parsedURL.String())
-		h.store.Save(id, parsedURL.String())
+		shortUrl := h.shortener.CreateShortURL(parsedURL.String())
 
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusCreated)
 
 		responce := model.CreateShortURLResponce{
-			Result: makeShortURL(id, h.settings.BaseURL),
+			Result: shortUrl,
 		}
 		encoder := json.NewEncoder(w)
 		if err := encoder.Encode(&responce); err != nil {

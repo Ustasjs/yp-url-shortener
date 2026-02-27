@@ -17,17 +17,20 @@ import (
 )
 
 func StartServer() {
-	settings := settings.InitSettings()
-	logger.Initialize(settings.LogLevel)
+	settingsMap := settings.InitSettings()
+	loggerErr := logger.Initialize(settingsMap.LogLevel)
+	if loggerErr != nil {
+		panic(loggerErr)
+	}
 
-	logger.Log.Info("Starting server on:", zap.String("address", string(settings.ServerAddress)))
+	logger.Log.Info("Starting server on:", zap.String("address", string(settingsMap.ServerAddress)))
 
 	r := chi.NewRouter()
 	initMiddleware(r)
-	initRoutes(r, settings)
+	initRoutes(r, settingsMap)
 
 	srv := &http.Server{
-		Addr:              string(settings.ServerAddress),
+		Addr:              string(settingsMap.ServerAddress),
 		Handler:           r,
 		ReadHeaderTimeout: 5 * time.Second,
 		ReadTimeout:       10 * time.Second,
@@ -43,8 +46,8 @@ func StartServer() {
 
 func initRoutes(r *chi.Mux, s *settings.Settings) {
 	store := repository.NewMemStorage(string(s.FileStoragePath))
-	shortener := shortener.NewShortener()
-	h := handler.NewHandler(store, shortener, s)
+	shortenerService := shortener.NewShortener(store, s.BaseURL)
+	h := handler.NewHandler(shortenerService)
 
 	r.Post("/", h.CreateShortURL)
 	r.Get("/{id}", h.GetShortURLByID)
