@@ -21,7 +21,7 @@ func (h *Handler) CreateShortURL(w http.ResponseWriter, r *http.Request) {
 	if r.Method == http.MethodPost {
 		bodyBytes, err := io.ReadAll(io.LimitReader(r.Body, 1<<20))
 		if err != nil {
-			http.Error(w, "bad request", http.StatusBadRequest)
+			http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
 			return
 		}
 		body := strings.TrimSpace(string(bodyBytes))
