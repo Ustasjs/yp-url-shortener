@@ -28,11 +28,11 @@ func (h *Handler) CreateShortURL(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		shortUrl := h.shortener.CreateShortURL(parsedURL.String())
+		shortURL := h.shortener.CreateShortURL(parsedURL.String())
 
 		w.Header().Set("Content-Type", "text/plain")
 		w.WriteHeader(http.StatusCreated)
-		_, err = w.Write([]byte(shortUrl))
+		_, err = w.Write([]byte(shortURL))
 		if err != nil {
 			http.Error(w, "internal server error", http.StatusInternalServerError)
 			return
@@ -46,12 +46,12 @@ func (h *Handler) CreateShortURL(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) GetShortURLByID(w http.ResponseWriter, r *http.Request) {
 	if r.Method == http.MethodGet {
 		id := r.PathValue("id")
-		originalUrl, err := h.shortener.GetOriginalURL(id)
+		originalURL, err := h.shortener.GetOriginalURL(id)
 		if err != nil {
 			http.Error(w, "url not found", http.StatusNotFound)
 			return
 		}
-		http.Redirect(w, r, originalUrl, http.StatusTemporaryRedirect)
+		http.Redirect(w, r, originalURL, http.StatusTemporaryRedirect)
 	} else {
 		http.Error(w, "Only GET requests are allowed", http.StatusBadRequest)
 	}
@@ -74,13 +74,13 @@ func (h *Handler) CreateShortURLJSONApi(w http.ResponseWriter, r *http.Request) 
 			return
 		}
 
-		shortUrl := h.shortener.CreateShortURL(parsedURL.String())
+		shortURL := h.shortener.CreateShortURL(parsedURL.String())
 
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusCreated)
 
 		responce := model.CreateShortURLResponce{
-			Result: shortUrl,
+			Result: shortURL,
 		}
 		encoder := json.NewEncoder(w)
 		if err := encoder.Encode(&responce); err != nil {
