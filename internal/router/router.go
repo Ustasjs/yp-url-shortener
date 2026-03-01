@@ -8,11 +8,13 @@ import (
 	"Ustasjs/yp-url-shortener/internal/repository"
 	"Ustasjs/yp-url-shortener/internal/service/shortener"
 	"compress/gzip"
+	"database/sql"
 	"net/http"
 	"time"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
+	_ "github.com/jackc/pgx/v5/stdlib"
 	"go.uber.org/zap"
 )
 
@@ -22,6 +24,15 @@ func StartServer() {
 	if loggerErr != nil {
 		panic(loggerErr)
 	}
+
+	db, dbErr := sql.Open("pgx", string(settingsMap.DatabaseDSN))
+
+	logger.Log.Info("Connect to database")
+
+	if dbErr != nil {
+		panic(dbErr)
+	}
+	defer db.Close()
 
 	logger.Log.Info("Starting server on:", zap.String("address", string(settingsMap.ServerAddress)))
 
