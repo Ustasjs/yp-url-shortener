@@ -5,6 +5,8 @@ import (
 	customMiddleware "Ustasjs/yp-url-shortener/internal/middleware"
 	"bytes"
 	"compress/gzip"
+	"context"
+	"errors"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
@@ -35,6 +37,26 @@ func (m *mockShortener) GetOriginalURL(id string) (string, error) {
 		return "", fmt.Errorf("not found")
 	}
 	return u, nil
+}
+
+type mockPingerOk struct{}
+
+func (p mockPingerOk) PingContext(_ctx context.Context) error {
+	return nil
+}
+
+func newMockPingerOk() *mockPingerOk {
+	return &mockPingerOk{}
+}
+
+type mockPingerFail struct{}
+
+func (p mockPingerFail) PingContext(_ctx context.Context) error {
+	return errors.New("db not available")
+}
+
+func newMockPingerFail() *mockPingerFail {
+	return &mockPingerFail{}
 }
 
 func TestHandler_CreateShortURL(t *testing.T) {
@@ -90,7 +112,8 @@ func TestHandler_CreateShortURL(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			mux := http.NewServeMux()
 			shortener := newMockShortener()
-			h := handler.NewHandler(shortener)
+			pinger := newMockPingerOk()
+			h := handler.NewHandler(shortener, pinger)
 			mux.HandleFunc("/", h.CreateShortURL)
 
 			rr := httptest.NewRecorder()
@@ -154,7 +177,8 @@ func TestHandler_GetShortURLByID(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			mux := http.NewServeMux()
-			h := handler.NewHandler(tt.shortener)
+			pinger := newMockPingerOk()
+			h := handler.NewHandler(tt.shortener, pinger)
 			mux.HandleFunc("/{id}", h.GetShortURLByID)
 
 			rr := httptest.NewRecorder()
@@ -221,7 +245,8 @@ func TestHandler_CreateShortURLJSONApi(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			mux := http.NewServeMux()
 			shortener := newMockShortener()
-			h := handler.NewHandler(shortener)
+			pinger := newMockPingerOk()
+			h := handler.NewHandler(shortener, pinger)
 			mux.HandleFunc("/api/shorten", h.CreateShortURLJSONApi)
 
 			rr := httptest.NewRecorder()
@@ -247,7 +272,8 @@ func TestHandler_CreateShortURL_Gzip(t *testing.T) {
 
 	mux := http.NewServeMux()
 	shortener := newMockShortener()
-	h := handler.NewHandler(shortener)
+	pinger := newMockPingerOk()
+	h := handler.NewHandler(shortener, pinger)
 
 	wrapped := customMiddleware.GzipDecompress(http.HandlerFunc(h.CreateShortURL))
 	mux.Handle("/", wrapped)
