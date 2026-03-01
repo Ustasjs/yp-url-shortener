@@ -38,7 +38,7 @@ func StartServer() {
 
 	r := chi.NewRouter()
 	initMiddleware(r)
-	initRoutes(r, settingsMap)
+	initRoutes(r, settingsMap, db)
 
 	srv := &http.Server{
 		Addr:              string(settingsMap.ServerAddress),
@@ -55,13 +55,14 @@ func StartServer() {
 	}
 }
 
-func initRoutes(r *chi.Mux, s *settings.Settings) {
+func initRoutes(r *chi.Mux, s *settings.Settings, db *sql.DB) {
 	store := repository.NewMemStorage(string(s.FileStoragePath))
 	shortenerService := shortener.NewShortener(store, s.BaseURL)
-	h := handler.NewHandler(shortenerService)
+	h := handler.NewHandler(shortenerService, db)
 
 	r.Post("/", h.CreateShortURL)
 	r.Get("/{id}", h.GetShortURLByID)
+	r.Get("/ping", h.GetDBPing)
 
 	r.Post("/api/shorten", h.CreateShortURLJSONApi)
 }
