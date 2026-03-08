@@ -40,8 +40,6 @@ func (s *MemStorage) Save(_ctx context.Context, id string, url string) error {
 	return nil
 }
 
-var ErrRecordNotFound = errors.New("record not found")
-
 func (s *MemStorage) Get(_ctx context.Context, id string) (string, error) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
