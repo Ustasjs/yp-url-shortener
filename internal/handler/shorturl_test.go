@@ -26,12 +26,12 @@ func newMockShortener() *mockShortener {
 	return &mockShortener{urls: make(map[string]string)}
 }
 
-func (m *mockShortener) CreateShortURL(originalURL string) string {
+func (m *mockShortener) CreateShortURL(_ctx context.Context, originalURL string) string {
 	m.urls[testShortURLID] = originalURL
 	return fmt.Sprintf("http://localhost:8080/%s", testShortURLID)
 }
 
-func (m *mockShortener) GetOriginalURL(id string) (string, error) {
+func (m *mockShortener) GetOriginalURL(_ctx context.Context, id string) (string, error) {
 	u, ok := m.urls[id]
 	if !ok {
 		return "", fmt.Errorf("not found")
