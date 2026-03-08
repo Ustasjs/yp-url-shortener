@@ -7,6 +7,7 @@ import (
 	customMiddleware "Ustasjs/yp-url-shortener/internal/middleware"
 	"Ustasjs/yp-url-shortener/internal/repository"
 	"Ustasjs/yp-url-shortener/internal/service/shortener"
+	"Ustasjs/yp-url-shortener/migrations"
 	"compress/gzip"
 	"database/sql"
 	"net/http"
@@ -25,14 +26,22 @@ func StartServer() {
 		panic(loggerErr)
 	}
 
-	db, dbErr := sql.Open("pgx", string(settingsMap.DatabaseDSN))
+	var db *sql.DB
+	if settingsMap.DatabaseDSN != "" {
+		db, dbErr := sql.Open("pgx", string(settingsMap.DatabaseDSN))
 
-	logger.Log.Info("Connect to database")
+		logger.Log.Info("Connect to database")
 
-	if dbErr != nil {
-		panic(dbErr)
+		if dbErr != nil {
+			panic(dbErr)
+		}
+		defer db.Close()
+
+		migrationsErr := migrations.RunMigrations(db)
+		if migrationsErr != nil {
+			panic(migrationsErr)
+		}
 	}
-	defer db.Close()
 
 	logger.Log.Info("Starting server on:", zap.String("address", string(settingsMap.ServerAddress)))
 
@@ -56,7 +65,14 @@ func StartServer() {
 }
 
 func initRoutes(r *chi.Mux, s *settings.Settings, db *sql.DB) {
-	store := repository.NewMemStorage(string(s.FileStoragePath))
+	var store shortener.Storage
+
+	if s.DatabaseDSN != "" {
+		store = repository.NewPostgresStorage(db)
+	} else {
+		store = repository.NewMemStorage(string(s.FileStoragePath))
+	}
+
 	shortenerService := shortener.NewShortener(store, s.BaseURL)
 	h := handler.NewHandler(shortenerService, db)
 

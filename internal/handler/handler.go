@@ -3,8 +3,8 @@ package handler
 import "context"
 
 type Shortener interface {
-	CreateShortURL(originalURL string) string
-	GetOriginalURL(id string) (string, error)
+	CreateShortURL(ctx context.Context, originalURL string) string
+	GetOriginalURL(ctx context.Context, id string) (string, error)
 }
 
 type Pinger interface {

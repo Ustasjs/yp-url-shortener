@@ -28,7 +28,8 @@ func (h *Handler) CreateShortURL(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		shortURL := h.shortener.CreateShortURL(parsedURL.String())
+		ctx := r.Context()
+		shortURL := h.shortener.CreateShortURL(ctx, parsedURL.String())
 
 		w.Header().Set("Content-Type", "text/plain")
 		w.WriteHeader(http.StatusCreated)
@@ -45,8 +46,9 @@ func (h *Handler) CreateShortURL(w http.ResponseWriter, r *http.Request) {
 
 func (h *Handler) GetShortURLByID(w http.ResponseWriter, r *http.Request) {
 	if r.Method == http.MethodGet {
+		ctx := r.Context()
 		id := r.PathValue("id")
-		originalURL, err := h.shortener.GetOriginalURL(id)
+		originalURL, err := h.shortener.GetOriginalURL(ctx, id)
 		if err != nil {
 			http.Error(w, "url not found", http.StatusNotFound)
 			return
@@ -74,7 +76,8 @@ func (h *Handler) CreateShortURLJSONApi(w http.ResponseWriter, r *http.Request) 
 			return
 		}
 
-		shortURL := h.shortener.CreateShortURL(parsedURL.String())
+		ctx := r.Context()
+		shortURL := h.shortener.CreateShortURL(ctx, parsedURL.String())
 
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusCreated)
