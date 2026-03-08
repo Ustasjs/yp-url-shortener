@@ -28,7 +28,8 @@ func StartServer() {
 
 	var db *sql.DB
 	if settingsMap.DatabaseDSN != "" {
-		db, dbErr := sql.Open("pgx", string(settingsMap.DatabaseDSN))
+		var dbErr error
+		db, dbErr = sql.Open("pgx", string(settingsMap.DatabaseDSN))
 
 		logger.Log.Info("Connect to database")
 
