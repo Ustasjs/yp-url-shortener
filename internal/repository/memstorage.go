@@ -2,6 +2,7 @@ package repository
 
 import (
 	"Ustasjs/yp-url-shortener/internal/logger"
+	"Ustasjs/yp-url-shortener/internal/model"
 	"context"
 	"encoding/json"
 	"errors"
@@ -48,6 +49,15 @@ func (s *MemStorage) Get(_ctx context.Context, id string) (string, error) {
 		return "", ErrRecordNotFound
 	}
 	return record.URL, nil
+}
+
+func (s *MemStorage) SaveListUrls(_ctx context.Context, records []model.ShortURLRecord) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	for _, rec := range records {
+		s.storage[rec.ID] = URLRecord{URL: rec.URL}
+	}
+	return s.SaveToFile()
 }
 
 func (s *MemStorage) SaveToFile() error {
