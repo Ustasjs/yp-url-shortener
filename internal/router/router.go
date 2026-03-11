@@ -82,7 +82,6 @@ func initRoutes(r *chi.Mux, s *settings.Settings, db *sql.DB) {
 	r.Get("/ping", h.GetDBPing)
 
 	r.Post("/api/shorten", h.CreateShortURLJSONApi)
-	r.Post("/api/shorten/batch", h.CreateShortURLSByBatch)
 }
 
 func initMiddleware(r *chi.Mux) {
