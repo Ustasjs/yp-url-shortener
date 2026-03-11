@@ -2,9 +2,12 @@ package handler_test
 
 import (
 	"Ustasjs/yp-url-shortener/internal/handler"
+	"Ustasjs/yp-url-shortener/internal/model"
 	customMiddleware "Ustasjs/yp-url-shortener/internal/middleware"
 	"bytes"
 	"compress/gzip"
+	"context"
+	"errors"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
@@ -24,17 +27,49 @@ func newMockShortener() *mockShortener {
 	return &mockShortener{urls: make(map[string]string)}
 }
 
-func (m *mockShortener) CreateShortURL(originalURL string) string {
+func (m *mockShortener) CreateShortURL(_ctx context.Context, originalURL string) string {
 	m.urls[testShortURLID] = originalURL
 	return fmt.Sprintf("http://localhost:8080/%s", testShortURLID)
 }
 
-func (m *mockShortener) GetOriginalURL(id string) (string, error) {
+func (m *mockShortener) GetOriginalURL(_ctx context.Context, id string) (string, error) {
 	u, ok := m.urls[id]
 	if !ok {
 		return "", fmt.Errorf("not found")
 	}
 	return u, nil
+}
+
+func (m *mockShortener) CreateShortURLsBatch(_ctx context.Context, items []model.BatchShortURLRequestItem) ([]model.BatchShortURLResponseItem, error) {
+	res := make([]model.BatchShortURLResponseItem, 0, len(items))
+	for _, item := range items {
+		m.urls[testShortURLID] = item.OriginalURL
+		res = append(res, model.BatchShortURLResponseItem{
+			CorrelationID: item.CorrelationID,
+			ShortURL:      fmt.Sprintf("http://localhost:8080/%s", testShortURLID),
+		})
+	}
+	return res, nil
+}
+
+type mockPingerOk struct{}
+
+func (p mockPingerOk) PingContext(_ctx context.Context) error {
+	return nil
+}
+
+func newMockPingerOk() *mockPingerOk {
+	return &mockPingerOk{}
+}
+
+type mockPingerFail struct{}
+
+func (p mockPingerFail) PingContext(_ctx context.Context) error {
+	return errors.New("db not available")
+}
+
+func newMockPingerFail() *mockPingerFail {
+	return &mockPingerFail{}
 }
 
 func TestHandler_CreateShortURL(t *testing.T) {
@@ -90,7 +125,8 @@ func TestHandler_CreateShortURL(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			mux := http.NewServeMux()
 			shortener := newMockShortener()
-			h := handler.NewHandler(shortener)
+			pinger := newMockPingerOk()
+			h := handler.NewHandler(shortener, pinger)
 			mux.HandleFunc("/", h.CreateShortURL)
 
 			rr := httptest.NewRecorder()
@@ -154,7 +190,8 @@ func TestHandler_GetShortURLByID(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			mux := http.NewServeMux()
-			h := handler.NewHandler(tt.shortener)
+			pinger := newMockPingerOk()
+			h := handler.NewHandler(tt.shortener, pinger)
 			mux.HandleFunc("/{id}", h.GetShortURLByID)
 
 			rr := httptest.NewRecorder()
@@ -221,7 +258,8 @@ func TestHandler_CreateShortURLJSONApi(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			mux := http.NewServeMux()
 			shortener := newMockShortener()
-			h := handler.NewHandler(shortener)
+			pinger := newMockPingerOk()
+			h := handler.NewHandler(shortener, pinger)
 			mux.HandleFunc("/api/shorten", h.CreateShortURLJSONApi)
 
 			rr := httptest.NewRecorder()
@@ -247,7 +285,8 @@ func TestHandler_CreateShortURL_Gzip(t *testing.T) {
 
 	mux := http.NewServeMux()
 	shortener := newMockShortener()
-	h := handler.NewHandler(shortener)
+	pinger := newMockPingerOk()
+	h := handler.NewHandler(shortener, pinger)
 
 	wrapped := customMiddleware.GzipDecompress(http.HandlerFunc(h.CreateShortURL))
 	mux.Handle("/", wrapped)

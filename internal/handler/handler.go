@@ -1,14 +1,25 @@
 package handler
 
+import (
+	"Ustasjs/yp-url-shortener/internal/model"
+	"context"
+)
+
 type Shortener interface {
-	CreateShortURL(originalURL string) string
-	GetOriginalURL(id string) (string, error)
+	CreateShortURL(ctx context.Context, originalURL string) string
+	GetOriginalURL(ctx context.Context, id string) (string, error)
+	CreateShortURLsBatch(ctx context.Context, items []model.BatchShortURLRequestItem) ([]model.BatchShortURLResponseItem, error)
+}
+
+type Pinger interface {
+	PingContext(ctx context.Context) error
 }
 
 type Handler struct {
 	shortener Shortener
+	pinger    Pinger
 }
 
-func NewHandler(shortener Shortener) *Handler {
-	return &Handler{shortener: shortener}
+func NewHandler(shortener Shortener, pinger Pinger) *Handler {
+	return &Handler{shortener: shortener, pinger: pinger}
 }
