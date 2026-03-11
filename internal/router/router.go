@@ -7,12 +7,15 @@ import (
 	customMiddleware "Ustasjs/yp-url-shortener/internal/middleware"
 	"Ustasjs/yp-url-shortener/internal/repository"
 	"Ustasjs/yp-url-shortener/internal/service/shortener"
+	"Ustasjs/yp-url-shortener/migrations"
 	"compress/gzip"
+	"database/sql"
 	"net/http"
 	"time"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
+	_ "github.com/jackc/pgx/v5/stdlib"
 	"go.uber.org/zap"
 )
 
@@ -23,11 +26,29 @@ func StartServer() {
 		panic(loggerErr)
 	}
 
+	var db *sql.DB
+	if settingsMap.DatabaseDSN != "" {
+		var dbErr error
+		db, dbErr = sql.Open("pgx", string(settingsMap.DatabaseDSN))
+
+		logger.Log.Info("Connect to database")
+
+		if dbErr != nil {
+			panic(dbErr)
+		}
+		defer db.Close()
+
+		migrationsErr := migrations.RunMigrations(db)
+		if migrationsErr != nil {
+			panic(migrationsErr)
+		}
+	}
+
 	logger.Log.Info("Starting server on:", zap.String("address", string(settingsMap.ServerAddress)))
 
 	r := chi.NewRouter()
 	initMiddleware(r)
-	initRoutes(r, settingsMap)
+	initRoutes(r, settingsMap, db)
 
 	srv := &http.Server{
 		Addr:              string(settingsMap.ServerAddress),
@@ -44,13 +65,21 @@ func StartServer() {
 	}
 }
 
-func initRoutes(r *chi.Mux, s *settings.Settings) {
-	store := repository.NewMemStorage(string(s.FileStoragePath))
+func initRoutes(r *chi.Mux, s *settings.Settings, db *sql.DB) {
+	var store shortener.Storage
+
+	if s.DatabaseDSN != "" {
+		store = repository.NewPostgresStorage(db)
+	} else {
+		store = repository.NewMemStorage(string(s.FileStoragePath))
+	}
+
 	shortenerService := shortener.NewShortener(store, s.BaseURL)
-	h := handler.NewHandler(shortenerService)
+	h := handler.NewHandler(shortenerService, db)
 
 	r.Post("/", h.CreateShortURL)
 	r.Get("/{id}", h.GetShortURLByID)
+	r.Get("/ping", h.GetDBPing)
 
 	r.Post("/api/shorten", h.CreateShortURLJSONApi)
 }
