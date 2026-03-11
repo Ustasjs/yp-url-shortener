@@ -1,14 +1,10 @@
 package handler
 
-import (
-	"Ustasjs/yp-url-shortener/internal/model"
-	"context"
-)
+import "context"
 
 type Shortener interface {
 	CreateShortURL(ctx context.Context, originalURL string) string
 	GetOriginalURL(ctx context.Context, id string) (string, error)
-	CreateShortURLsBatch(ctx context.Context, items []model.BatchShortURLRequestItem) ([]model.BatchShortURLResponseItem, error)
 }
 
 type Pinger interface {

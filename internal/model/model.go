@@ -17,8 +17,3 @@ type BatchShortURLResponseItem struct {
 	CorrelationID string `json:"correlation_id"`
 	ShortURL      string `json:"short_url"`
 }
-
-type ShortURLRecord struct {
-	ID  string `json:"id"`
-	URL string `json:"url"`
-}

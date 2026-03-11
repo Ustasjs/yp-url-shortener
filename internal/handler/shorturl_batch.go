@@ -20,21 +20,21 @@ func (h *Handler) CreateShortURLSByBatch(w http.ResponseWriter, r *http.Request)
 			return
 		}
 
-		for i := range request {
-			parsedURL, err := url.ParseRequestURI(request[i].OriginalURL)
+		ctx := r.Context()
+		response := make([]model.BatchShortURLResponseItem, 0, len(request))
+
+		for _, item := range request {
+			parsedURL, err := url.ParseRequestURI(item.OriginalURL)
 			if err != nil || parsedURL.Scheme == "" || parsedURL.Host == "" {
 				http.Error(w, "invalid url", http.StatusBadRequest)
 				return
 			}
-			request[i].OriginalURL = parsedURL.String()
-		}
 
-		ctx := r.Context()
-		response, err := h.shortener.CreateShortURLsBatch(ctx, request)
-		if err != nil {
-			logger.Log.Error(err.Error())
-			http.Error(w, "error saving batch", http.StatusInternalServerError)
-			return
+			shortURL := h.shortener.CreateShortURL(ctx, parsedURL.String())
+			response = append(response, model.BatchShortURLResponseItem{
+				CorrelationID: item.CorrelationID,
+				ShortURL:      shortURL,
+			})
 		}
 
 		w.Header().Set("Content-Type", "application/json")
