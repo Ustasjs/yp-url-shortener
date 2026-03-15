@@ -4,6 +4,7 @@ import (
 	"Ustasjs/yp-url-shortener/internal/handler"
 	customMiddleware "Ustasjs/yp-url-shortener/internal/middleware"
 	"Ustasjs/yp-url-shortener/internal/model"
+	"Ustasjs/yp-url-shortener/internal/repository"
 	"bytes"
 	"compress/gzip"
 	"context"
@@ -20,7 +21,8 @@ import (
 var testShortURLID = "test-id"
 
 type mockShortener struct {
-	urls map[string]string
+	urls         map[string]string
+	CreateURLErr error
 }
 
 func newMockShortener() *mockShortener {
@@ -28,6 +30,9 @@ func newMockShortener() *mockShortener {
 }
 
 func (m *mockShortener) CreateShortURL(_ctx context.Context, originalURL string) (string, error) {
+	if m.CreateURLErr != nil {
+		return fmt.Sprintf("http://localhost:8080/%s", testShortURLID), m.CreateURLErr
+	}
 	m.urls[testShortURLID] = originalURL
 	return fmt.Sprintf("http://localhost:8080/%s", testShortURLID), nil
 }
@@ -80,9 +85,10 @@ func TestHandler_CreateShortURL(t *testing.T) {
 	}
 
 	tests := []struct {
-		name string
-		r    *http.Request
-		want want
+		name      string
+		shortener *mockShortener
+		r         *http.Request
+		want      want
 	}{
 		{
 			name: "check request with invalid method",
@@ -120,11 +126,28 @@ func TestHandler_CreateShortURL(t *testing.T) {
 				contentType: "text/plain",
 			},
 		},
+		{
+			name: "check post request when url already exists (conflict)",
+			shortener: func() *mockShortener {
+				m := newMockShortener()
+				m.CreateURLErr = repository.ErrConflict
+				return m
+			}(),
+			r: httptest.NewRequest(http.MethodPost, "/", strings.NewReader("https://example.com")),
+			want: want{
+				code:        http.StatusConflict,
+				response:    fmt.Sprintf("http://localhost:8080/%s", testShortURLID),
+				contentType: "text/plain",
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			mux := http.NewServeMux()
-			shortener := newMockShortener()
+			shortener := tt.shortener
+			if shortener == nil {
+				shortener = newMockShortener()
+			}
 			pinger := newMockPingerOk()
 			h := handler.NewHandler(shortener, pinger)
 			mux.HandleFunc("/", h.CreateShortURL)
@@ -213,9 +236,10 @@ func TestHandler_CreateShortURLJSONApi(t *testing.T) {
 	}
 
 	tests := []struct {
-		name string
-		r    *http.Request
-		want want
+		name      string
+		shortener *mockShortener
+		r         *http.Request
+		want      want
 	}{
 		{
 			name: "check request with invalid method",
@@ -253,11 +277,28 @@ func TestHandler_CreateShortURLJSONApi(t *testing.T) {
 				contentType: "application/json",
 			},
 		},
+		{
+			name: "check post request when url already exists (conflict)",
+			shortener: func() *mockShortener {
+				m := newMockShortener()
+				m.CreateURLErr = repository.ErrConflict
+				return m
+			}(),
+			r: httptest.NewRequest(http.MethodPost, "/api/shorten", strings.NewReader(`{"url":"https://practicum.yandex.ru/"}`)),
+			want: want{
+				code:        http.StatusConflict,
+				response:    fmt.Sprintf("{\"result\":\"http://localhost:8080/%s\"}\n", testShortURLID),
+				contentType: "application/json",
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			mux := http.NewServeMux()
-			shortener := newMockShortener()
+			shortener := tt.shortener
+			if shortener == nil {
+				shortener = newMockShortener()
+			}
 			pinger := newMockPingerOk()
 			h := handler.NewHandler(shortener, pinger)
 			mux.HandleFunc("/api/shorten", h.CreateShortURLJSONApi)
