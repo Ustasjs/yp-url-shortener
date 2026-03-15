@@ -26,12 +26,12 @@ func NewShortener(repo Storage, baseURL settings.BaseURL) *Shortener {
 	}
 }
 
-func (s *Shortener) CreateShortURL(ctx context.Context, originalURL string) string {
+func (s *Shortener) CreateShortURL(ctx context.Context, originalURL string) (string, error) {
 	id := shortenURL(originalURL)
-	s.repo.Save(ctx, id, originalURL)
+	err := s.repo.Save(ctx, id, originalURL)
 
 	base := strings.TrimSuffix(string(s.baseURL), "/")
-	return fmt.Sprintf("%s/%s", base, id)
+	return fmt.Sprintf("%s/%s", base, id), err
 }
 
 func (s *Shortener) GetOriginalURL(ctx context.Context, id string) (string, error) {

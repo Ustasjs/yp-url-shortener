@@ -2,8 +2,8 @@ package handler_test
 
 import (
 	"Ustasjs/yp-url-shortener/internal/handler"
-	"Ustasjs/yp-url-shortener/internal/model"
 	customMiddleware "Ustasjs/yp-url-shortener/internal/middleware"
+	"Ustasjs/yp-url-shortener/internal/model"
 	"bytes"
 	"compress/gzip"
 	"context"
@@ -27,9 +27,9 @@ func newMockShortener() *mockShortener {
 	return &mockShortener{urls: make(map[string]string)}
 }
 
-func (m *mockShortener) CreateShortURL(_ctx context.Context, originalURL string) string {
+func (m *mockShortener) CreateShortURL(_ctx context.Context, originalURL string) (string, error) {
 	m.urls[testShortURLID] = originalURL
-	return fmt.Sprintf("http://localhost:8080/%s", testShortURLID)
+	return fmt.Sprintf("http://localhost:8080/%s", testShortURLID), nil
 }
 
 func (m *mockShortener) GetOriginalURL(_ctx context.Context, id string) (string, error) {

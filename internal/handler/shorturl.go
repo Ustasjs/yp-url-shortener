@@ -3,7 +3,9 @@ package handler
 import (
 	"Ustasjs/yp-url-shortener/internal/logger"
 	"Ustasjs/yp-url-shortener/internal/model"
+	"Ustasjs/yp-url-shortener/internal/repository"
 	"encoding/json"
+	"errors"
 	"io"
 	"net/http"
 	"net/url"
@@ -29,10 +31,23 @@ func (h *Handler) CreateShortURL(w http.ResponseWriter, r *http.Request) {
 		}
 
 		ctx := r.Context()
-		shortURL := h.shortener.CreateShortURL(ctx, parsedURL.String())
+		shortURL, err := h.shortener.CreateShortURL(ctx, parsedURL.String())
+		var status int
+		hasConflict := errors.Is(err, repository.ErrConflict)
+
+		if err != nil && !hasConflict {
+			http.Error(w, "bad request", http.StatusBadRequest)
+			return
+		}
+
+		if hasConflict {
+			status = http.StatusConflict
+		} else {
+			status = http.StatusCreated
+		}
 
 		w.Header().Set("Content-Type", "text/plain")
-		w.WriteHeader(http.StatusCreated)
+		w.WriteHeader(status)
 		_, err = w.Write([]byte(shortURL))
 		if err != nil {
 			http.Error(w, "internal server error", http.StatusInternalServerError)
@@ -77,10 +92,23 @@ func (h *Handler) CreateShortURLJSONApi(w http.ResponseWriter, r *http.Request) 
 		}
 
 		ctx := r.Context()
-		shortURL := h.shortener.CreateShortURL(ctx, parsedURL.String())
+		shortURL, err := h.shortener.CreateShortURL(ctx, parsedURL.String())
+		var status int
+		hasConflict := errors.Is(err, repository.ErrConflict)
+
+		if err != nil && !hasConflict {
+			http.Error(w, "bad request", http.StatusBadRequest)
+			return
+		}
+
+		if hasConflict {
+			status = http.StatusConflict
+		} else {
+			status = http.StatusCreated
+		}
 
 		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusCreated)
+		w.WriteHeader(status)
 
 		responce := model.CreateShortURLResponce{
 			Result: shortURL,

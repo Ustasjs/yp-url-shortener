@@ -15,14 +15,23 @@ func NewPostgresStorage(db *sql.DB) *PostgresStorage {
 	return &PostgresStorage{db: db}
 }
 
+var ErrConflict = errors.New("url already exists")
+
 func (s *PostgresStorage) Save(ctx context.Context, id string, url string) error {
-	_, err := s.db.ExecContext(ctx,
+	result, err := s.db.ExecContext(ctx,
 		`INSERT INTO short_urls (short_id, original_url)
          VALUES ($1, $2)
          ON CONFLICT (original_url) DO NOTHING`,
 		id, url,
 	)
-	return err
+	if err != nil {
+		return err
+	}
+	rows, _ := result.RowsAffected()
+	if rows == 0 {
+		return ErrConflict
+	}
+	return nil
 }
 
 func (s *PostgresStorage) Get(ctx context.Context, id string) (string, error) {
