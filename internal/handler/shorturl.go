@@ -30,14 +30,14 @@ func (h *Handler) CreateShortURL(w http.ResponseWriter, r *http.Request) {
 			writeJSONError(w, "url is required", http.StatusBadRequest)
 			return
 		}
-		parsedURL, err := url.ParseRequestURI(body)
-		if err != nil || parsedURL.Scheme == "" || parsedURL.Host == "" {
+		validUrl, err := parseURL(body)
+		if err != nil {
 			writeJSONError(w, "invalid url", http.StatusBadRequest)
 			return
 		}
 
 		ctx := r.Context()
-		shortURL, err := h.shortener.CreateShortURL(ctx, parsedURL.String())
+		shortURL, err := h.shortener.CreateShortURL(ctx, validUrl)
 		var status int
 		hasConflict := errors.Is(err, repository.ErrConflict)
 
@@ -91,14 +91,14 @@ func (h *Handler) CreateShortURLJSONApi(w http.ResponseWriter, r *http.Request) 
 			return
 		}
 
-		parsedURL, err := url.ParseRequestURI(request.URL)
-		if err != nil || parsedURL.Scheme == "" || parsedURL.Host == "" {
+		validUrl, err := parseURL(request.URL)
+		if err != nil {
 			writeJSONError(w, "invalid url", http.StatusBadRequest)
 			return
 		}
 
 		ctx := r.Context()
-		shortURL, err := h.shortener.CreateShortURL(ctx, parsedURL.String())
+		shortURL, err := h.shortener.CreateShortURL(ctx, validUrl)
 		var status int
 		hasConflict := errors.Is(err, repository.ErrConflict)
 
@@ -129,4 +129,12 @@ func (h *Handler) CreateShortURLJSONApi(w http.ResponseWriter, r *http.Request) 
 	} else {
 		writeJSONError(w, "Only POST requests are allowed", http.StatusBadRequest)
 	}
+}
+
+func parseURL(raw string) (string, error) {
+	parsed, err := url.ParseRequestURI(raw)
+	if err != nil || parsed.Scheme == "" || parsed.Host == "" {
+		return "", errors.New("invalid url")
+	}
+	return parsed.String(), nil
 }
