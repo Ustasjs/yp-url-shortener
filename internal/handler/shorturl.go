@@ -3,57 +3,80 @@ package handler
 import (
 	"Ustasjs/yp-url-shortener/internal/logger"
 	"Ustasjs/yp-url-shortener/internal/model"
+	"Ustasjs/yp-url-shortener/internal/repository"
 	"encoding/json"
+	"errors"
 	"io"
 	"net/http"
 	"net/url"
 	"strings"
 )
 
+func writeJSONError(w http.ResponseWriter, message string, status int) {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(status)
+	json.NewEncoder(w).Encode(model.ErrorResponse{Error: message})
+}
+
 func (h *Handler) CreateShortURL(w http.ResponseWriter, r *http.Request) {
 	if r.Method == http.MethodPost {
 		bodyBytes, err := io.ReadAll(io.LimitReader(r.Body, 1<<20))
 		if err != nil {
-			http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
+			writeJSONError(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
 			return
 		}
 		body := strings.TrimSpace(string(bodyBytes))
 		if body == "" {
-			http.Error(w, "url is required", http.StatusBadRequest)
+			writeJSONError(w, "url is required", http.StatusBadRequest)
 			return
 		}
-		parsedURL, err := url.ParseRequestURI(body)
-		if err != nil || parsedURL.Scheme == "" || parsedURL.Host == "" {
-			http.Error(w, "invalid url", http.StatusBadRequest)
+		validURL, err := parseURL(body)
+		if err != nil {
+			writeJSONError(w, "invalid url", http.StatusBadRequest)
 			return
 		}
 
-		shortURL := h.shortener.CreateShortURL(parsedURL.String())
+		ctx := r.Context()
+		shortURL, err := h.shortener.CreateShortURL(ctx, validURL)
+		var status int
+		hasConflict := errors.Is(err, repository.ErrConflict)
+
+		if err != nil && !hasConflict {
+			writeJSONError(w, "bad request", http.StatusBadRequest)
+			return
+		}
+
+		if hasConflict {
+			status = http.StatusConflict
+		} else {
+			status = http.StatusCreated
+		}
 
 		w.Header().Set("Content-Type", "text/plain")
-		w.WriteHeader(http.StatusCreated)
+		w.WriteHeader(status)
 		_, err = w.Write([]byte(shortURL))
 		if err != nil {
-			http.Error(w, "internal server error", http.StatusInternalServerError)
+			logger.Log.Error("internal server error")
 			return
 		}
 		return
 	} else {
-		http.Error(w, "Only POST requests are allowed", http.StatusBadRequest)
+		writeJSONError(w, "Only POST requests are allowed", http.StatusBadRequest)
 	}
 }
 
 func (h *Handler) GetShortURLByID(w http.ResponseWriter, r *http.Request) {
 	if r.Method == http.MethodGet {
+		ctx := r.Context()
 		id := r.PathValue("id")
-		originalURL, err := h.shortener.GetOriginalURL(id)
+		originalURL, err := h.shortener.GetOriginalURL(ctx, id)
 		if err != nil {
-			http.Error(w, "url not found", http.StatusNotFound)
+			writeJSONError(w, "url not found", http.StatusNotFound)
 			return
 		}
 		http.Redirect(w, r, originalURL, http.StatusTemporaryRedirect)
 	} else {
-		http.Error(w, "Only GET requests are allowed", http.StatusBadRequest)
+		writeJSONError(w, "Only GET requests are allowed", http.StatusBadRequest)
 	}
 }
 
@@ -64,20 +87,34 @@ func (h *Handler) CreateShortURLJSONApi(w http.ResponseWriter, r *http.Request) 
 		var request model.CreateShortURLRequest
 		if err := decoder.Decode(&request); err != nil {
 			logger.Log.Error(err.Error())
-			http.Error(w, "cannot decode request JSON body", http.StatusBadRequest)
+			writeJSONError(w, "cannot decode request JSON body", http.StatusBadRequest)
 			return
 		}
 
-		parsedURL, err := url.ParseRequestURI(request.URL)
-		if err != nil || parsedURL.Scheme == "" || parsedURL.Host == "" {
-			http.Error(w, "invalid url", http.StatusBadRequest)
+		validURL, err := parseURL(request.URL)
+		if err != nil {
+			writeJSONError(w, "invalid url", http.StatusBadRequest)
 			return
 		}
 
-		shortURL := h.shortener.CreateShortURL(parsedURL.String())
+		ctx := r.Context()
+		shortURL, err := h.shortener.CreateShortURL(ctx, validURL)
+		var status int
+		hasConflict := errors.Is(err, repository.ErrConflict)
+
+		if err != nil && !hasConflict {
+			writeJSONError(w, "bad request", http.StatusBadRequest)
+			return
+		}
+
+		if hasConflict {
+			status = http.StatusConflict
+		} else {
+			status = http.StatusCreated
+		}
 
 		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusCreated)
+		w.WriteHeader(status)
 
 		responce := model.CreateShortURLResponce{
 			Result: shortURL,
@@ -85,11 +122,19 @@ func (h *Handler) CreateShortURLJSONApi(w http.ResponseWriter, r *http.Request) 
 		encoder := json.NewEncoder(w)
 		if err := encoder.Encode(&responce); err != nil {
 			logger.Log.Error(err.Error())
-			http.Error(w, "error encoding response", http.StatusBadRequest)
+			writeJSONError(w, "error encoding response", http.StatusBadRequest)
 			return
 		}
 		return
 	} else {
-		http.Error(w, "Only POST requests are allowed", http.StatusBadRequest)
+		writeJSONError(w, "Only POST requests are allowed", http.StatusBadRequest)
 	}
+}
+
+func parseURL(raw string) (string, error) {
+	parsed, err := url.ParseRequestURI(raw)
+	if err != nil || parsed.Scheme == "" || parsed.Host == "" {
+		return "", errors.New("invalid url")
+	}
+	return parsed.String(), nil
 }
