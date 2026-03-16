@@ -95,8 +95,8 @@ func TestHandler_CreateShortURL(t *testing.T) {
 			r:    httptest.NewRequest(http.MethodGet, "/", nil),
 			want: want{
 				code:        http.StatusBadRequest,
-				response:    "Only POST requests are allowed\n",
-				contentType: "text/plain; charset=utf-8",
+				response:    "{\"error\":\"Only POST requests are allowed\"}\n",
+				contentType: "application/json",
 			},
 		},
 		{
@@ -104,8 +104,8 @@ func TestHandler_CreateShortURL(t *testing.T) {
 			r:    httptest.NewRequest(http.MethodPost, "/", nil),
 			want: want{
 				code:        http.StatusBadRequest,
-				response:    "url is required\n",
-				contentType: "text/plain; charset=utf-8",
+				response:    "{\"error\":\"url is required\"}\n",
+				contentType: "application/json",
 			},
 		},
 		{
@@ -113,8 +113,8 @@ func TestHandler_CreateShortURL(t *testing.T) {
 			r:    httptest.NewRequest(http.MethodPost, "/", strings.NewReader("invalid body")),
 			want: want{
 				code:        http.StatusBadRequest,
-				response:    "invalid url\n",
-				contentType: "text/plain; charset=utf-8",
+				response:    "{\"error\":\"invalid url\"}\n",
+				contentType: "application/json",
 			},
 		},
 		{
@@ -185,8 +185,8 @@ func TestHandler_GetShortURLByID(t *testing.T) {
 			r:         httptest.NewRequest(http.MethodPost, "/123", nil),
 			want: want{
 				code:        http.StatusBadRequest,
-				response:    "Only GET requests are allowed\n",
-				contentType: "text/plain; charset=utf-8",
+				response:    "{\"error\":\"Only GET requests are allowed\"}\n",
+				contentType: "application/json",
 			},
 		},
 		{
@@ -205,8 +205,8 @@ func TestHandler_GetShortURLByID(t *testing.T) {
 			r:         httptest.NewRequest(http.MethodGet, "/456", nil),
 			want: want{
 				code:        http.StatusNotFound,
-				response:    "url not found\n",
-				contentType: "text/plain; charset=utf-8",
+				response:    "{\"error\":\"url not found\"}\n",
+				contentType: "application/json",
 			},
 		},
 	}
@@ -246,8 +246,8 @@ func TestHandler_CreateShortURLJSONApi(t *testing.T) {
 			r:    httptest.NewRequest(http.MethodGet, "/api/shorten", nil),
 			want: want{
 				code:        http.StatusBadRequest,
-				response:    "Only POST requests are allowed\n",
-				contentType: "text/plain; charset=utf-8",
+				response:    "{\"error\":\"Only POST requests are allowed\"}\n",
+				contentType: "application/json",
 			},
 		},
 		{
@@ -255,8 +255,8 @@ func TestHandler_CreateShortURLJSONApi(t *testing.T) {
 			r:    httptest.NewRequest(http.MethodPost, "/api/shorten", nil),
 			want: want{
 				code:        http.StatusBadRequest,
-				response:    "cannot decode request JSON body\n",
-				contentType: "text/plain; charset=utf-8",
+				response:    "{\"error\":\"cannot decode request JSON body\"}\n",
+				contentType: "application/json",
 			},
 		},
 		{
@@ -264,8 +264,8 @@ func TestHandler_CreateShortURLJSONApi(t *testing.T) {
 			r:    httptest.NewRequest(http.MethodPost, "/api/shorten", strings.NewReader("invalid body")),
 			want: want{
 				code:        http.StatusBadRequest,
-				response:    "cannot decode request JSON body\n",
-				contentType: "text/plain; charset=utf-8",
+				response:    "{\"error\":\"cannot decode request JSON body\"}\n",
+				contentType: "application/json",
 			},
 		},
 		{

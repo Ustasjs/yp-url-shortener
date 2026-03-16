@@ -16,14 +16,14 @@ func (h *Handler) CreateShortURLSByBatch(w http.ResponseWriter, r *http.Request)
 		var request []model.BatchShortURLRequestItem
 		if err := decoder.Decode(&request); err != nil {
 			logger.Log.Error(err.Error())
-			http.Error(w, "cannot decode request JSON body", http.StatusBadRequest)
+			writeJSONError(w, "cannot decode request JSON body", http.StatusBadRequest)
 			return
 		}
 
 		for i := range request {
 			parsedURL, err := url.ParseRequestURI(request[i].OriginalURL)
 			if err != nil || parsedURL.Scheme == "" || parsedURL.Host == "" {
-				http.Error(w, "invalid url", http.StatusBadRequest)
+				writeJSONError(w, "invalid url", http.StatusBadRequest)
 				return
 			}
 			request[i].OriginalURL = parsedURL.String()
@@ -33,7 +33,7 @@ func (h *Handler) CreateShortURLSByBatch(w http.ResponseWriter, r *http.Request)
 		response, err := h.shortener.CreateShortURLsBatch(ctx, request)
 		if err != nil {
 			logger.Log.Error(err.Error())
-			http.Error(w, "error saving batch", http.StatusInternalServerError)
+			writeJSONError(w, "error saving batch", http.StatusInternalServerError)
 			return
 		}
 
@@ -43,11 +43,11 @@ func (h *Handler) CreateShortURLSByBatch(w http.ResponseWriter, r *http.Request)
 		encoder := json.NewEncoder(w)
 		if err := encoder.Encode(response); err != nil {
 			logger.Log.Error(err.Error())
-			http.Error(w, "error encoding response", http.StatusInternalServerError)
+			writeJSONError(w, "error encoding response", http.StatusInternalServerError)
 			return
 		}
 		return
 	} else {
-		http.Error(w, "Only POST requests are allowed", http.StatusBadRequest)
+		writeJSONError(w, "Only POST requests are allowed", http.StatusBadRequest)
 	}
 }

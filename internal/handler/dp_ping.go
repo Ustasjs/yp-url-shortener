@@ -19,6 +19,6 @@ func (h *Handler) GetDBPing(w http.ResponseWriter, r *http.Request) {
 		}
 		w.WriteHeader(http.StatusOK)
 	} else {
-		http.Error(w, "Only GET requests are allowed", http.StatusBadRequest)
+		http.Error(w, "Only GET requests are allowed", http.StatusMethodNotAllowed)
 	}
 }

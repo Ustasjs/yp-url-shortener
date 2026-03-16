@@ -18,6 +18,10 @@ type BatchShortURLResponseItem struct {
 	ShortURL      string `json:"short_url"`
 }
 
+type ErrorResponse struct {
+	Error string `json:"error"`
+}
+
 type ShortURLRecord struct {
 	ID  string `json:"id"`
 	URL string `json:"url"`
