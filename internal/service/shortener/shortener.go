@@ -12,6 +12,7 @@ type Storage interface {
 	Save(ctx context.Context, id string, url string) error
 	Get(ctx context.Context, id string) (string, error)
 	SaveListUrls(ctx context.Context, records []model.ShortURLRecord) error
+	CreateUser(ctx context.Context) (string, error)
 }
 
 type Shortener struct {

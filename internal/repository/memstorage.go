@@ -8,6 +8,8 @@ import (
 	"errors"
 	"os"
 	"sync"
+
+	"github.com/google/uuid"
 )
 
 type URLRecord struct {
@@ -17,11 +19,16 @@ type URLRecord struct {
 type MemStorage struct {
 	mu       sync.RWMutex
 	storage  map[string]URLRecord
+	users    map[string]struct{}
 	filePath string
 }
 
 func NewMemStorage(filePath string) *MemStorage {
-	storage := &MemStorage{storage: make(map[string]URLRecord), filePath: filePath}
+	storage := &MemStorage{
+		storage:  make(map[string]URLRecord),
+		users:    make(map[string]struct{}),
+		filePath: filePath,
+	}
 	err := storage.LoadFromFile()
 	if err != nil {
 		logger.Log.Error(err.Error())
@@ -89,4 +96,14 @@ func (s *MemStorage) LoadFromFile() error {
 		return err
 	}
 	return nil
+}
+
+func (s *MemStorage) CreateUser(_ctx context.Context) (string, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	userID := uuid.New().String()
+	s.users[userID] = struct{}{}
+
+	return userID, nil
 }

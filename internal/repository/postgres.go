@@ -69,3 +69,11 @@ func (s *PostgresStorage) SaveListUrls(ctx context.Context, records []model.Shor
 	}
 	return tx.Commit()
 }
+
+func (s *PostgresStorage) CreateUser(ctx context.Context) (string, error) {
+	var userID string
+	err := s.db.QueryRowContext(ctx,
+		`INSERT INTO users DEFAULT VALUES RETURNING id`,
+	).Scan(&userID)
+	return userID, err
+}
