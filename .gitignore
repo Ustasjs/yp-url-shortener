@@ -23,3 +23,5 @@ vendor/
 .vscode
 
 .env
+.cursor
+.claude
