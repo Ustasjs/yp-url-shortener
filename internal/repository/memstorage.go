@@ -13,7 +13,8 @@ import (
 )
 
 type URLRecord struct {
-	URL string
+	URL    string
+	UserID string
 }
 
 type MemStorage struct {
@@ -36,10 +37,10 @@ func NewMemStorage(filePath string) *MemStorage {
 	return storage
 }
 
-func (s *MemStorage) Save(_ctx context.Context, id string, url string) error {
+func (s *MemStorage) Save(_ctx context.Context, id string, url string, userID string) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	s.storage[id] = URLRecord{URL: url}
+	s.storage[id] = URLRecord{URL: url, UserID: userID}
 	err := s.SaveToFile()
 	if err != nil {
 		logger.Log.Error(err.Error())
@@ -58,11 +59,11 @@ func (s *MemStorage) Get(_ctx context.Context, id string) (string, error) {
 	return record.URL, nil
 }
 
-func (s *MemStorage) SaveListUrls(_ctx context.Context, records []model.ShortURLRecord) error {
+func (s *MemStorage) SaveListUrls(_ctx context.Context, records []model.ShortURLRecord, userID string) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	for _, rec := range records {
-		s.storage[rec.ID] = URLRecord{URL: rec.URL}
+		s.storage[rec.ID] = URLRecord{URL: rec.URL, UserID: userID}
 	}
 	return s.SaveToFile()
 }
@@ -106,4 +107,21 @@ func (s *MemStorage) CreateUser(_ctx context.Context) (string, error) {
 	s.users[userID] = struct{}{}
 
 	return userID, nil
+}
+
+func (s *MemStorage) GetUserURLs(_ctx context.Context, userID string) ([]model.UserURLItem, error) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
+	var urls []model.UserURLItem
+	for shortID, record := range s.storage {
+		if record.UserID == userID {
+			urls = append(urls, model.UserURLItem{
+				ShortURL:    shortID,
+				OriginalURL: record.URL,
+			})
+		}
+	}
+
+	return urls, nil
 }
