@@ -46,9 +46,16 @@ func StartServer() {
 
 	logger.Log.Info("Starting server on:", zap.String("address", string(settingsMap.ServerAddress)))
 
+	var store shortener.Storage
+	if settingsMap.DatabaseDSN != "" {
+		store = repository.NewPostgresStorage(db)
+	} else {
+		store = repository.NewMemStorage(string(settingsMap.FileStoragePath))
+	}
+
 	r := chi.NewRouter()
-	initMiddleware(r)
-	initRoutes(r, settingsMap, db)
+	initMiddleware(r, store)
+	initRoutes(r, settingsMap, db, store)
 
 	srv := &http.Server{
 		Addr:              string(settingsMap.ServerAddress),
@@ -65,15 +72,7 @@ func StartServer() {
 	}
 }
 
-func initRoutes(r *chi.Mux, s *settings.Settings, db *sql.DB) {
-	var store shortener.Storage
-
-	if s.DatabaseDSN != "" {
-		store = repository.NewPostgresStorage(db)
-	} else {
-		store = repository.NewMemStorage(string(s.FileStoragePath))
-	}
-
+func initRoutes(r *chi.Mux, s *settings.Settings, db *sql.DB, store shortener.Storage) {
 	shortenerService := shortener.NewShortener(store, s.BaseURL)
 	h := handler.NewHandler(shortenerService, db)
 
@@ -83,10 +82,12 @@ func initRoutes(r *chi.Mux, s *settings.Settings, db *sql.DB) {
 
 	r.Post("/api/shorten", h.CreateShortURLJSONApi)
 	r.Post("/api/shorten/batch", h.CreateShortURLSByBatch)
+	r.Get("/api/user/urls", h.GetUserURLs)
 }
 
-func initMiddleware(r *chi.Mux) {
+func initMiddleware(r *chi.Mux, store customMiddleware.UserRepository) {
 	r.Use(logger.LoggerMiddleware)
 	r.Use(customMiddleware.GzipDecompress)
 	r.Use(middleware.Compress(gzip.DefaultCompression))
+	r.Use(customMiddleware.Auth(store))
 }
