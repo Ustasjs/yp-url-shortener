@@ -84,8 +84,9 @@ func (s *Shortener) GetUserURLs(ctx context.Context, userID string) ([]model.Use
 	return items, nil
 }
 
-func (s *Shortener) DeleteURLsAsync(userID string, shortIDs []string) {
+func (s *Shortener) DeleteURLsAsync(userID string, shortIDs []string) error {
 	if s.deleter != nil {
-		s.deleter.DeleteURLsAsync(userID, shortIDs)
+		return s.deleter.DeleteURLsAsync(userID, shortIDs)
 	}
+	return nil
 }

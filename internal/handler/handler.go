@@ -10,7 +10,7 @@ type Shortener interface {
 	GetOriginalURL(ctx context.Context, id string) (string, error)
 	CreateShortURLsBatch(ctx context.Context, items []model.BatchShortURLRequestItem) ([]model.BatchShortURLResponseItem, error)
 	GetUserURLs(ctx context.Context, userID string) ([]model.UserURLItem, error)
-	DeleteURLsAsync(userID string, shortIDs []string)
+	DeleteURLsAsync(userID string, shortIDs []string) error
 }
 
 type Pinger interface {

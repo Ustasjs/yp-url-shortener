@@ -2,7 +2,9 @@ package handler
 
 import (
 	"Ustasjs/yp-url-shortener/internal/middleware"
+	"Ustasjs/yp-url-shortener/internal/service/shortener"
 	"encoding/json"
+	"errors"
 	"net/http"
 )
 
@@ -24,7 +26,11 @@ func (h *Handler) DeleteUserURLs(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	h.shortener.DeleteURLsAsync(userID, shortIDs)
+	err := h.shortener.DeleteURLsAsync(userID, shortIDs)
+	if errors.Is(err, shortener.ErrServiceOverloaded) {
+		http.Error(w, "Service is overloaded, try again later", http.StatusServiceUnavailable)
+		return
+	}
 
 	w.WriteHeader(http.StatusAccepted)
 }

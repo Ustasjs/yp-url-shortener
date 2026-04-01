@@ -4,10 +4,13 @@ import (
 	"Ustasjs/yp-url-shortener/internal/logger"
 	"Ustasjs/yp-url-shortener/internal/model"
 	"context"
+	"errors"
 	"time"
 
 	"go.uber.org/zap"
 )
+
+var ErrServiceOverloaded = errors.New("service is overloaded")
 
 type deleteTask struct {
 	userID   string
@@ -88,16 +91,18 @@ func (d *URLDeleter) flush(items []model.DeleteItem) {
 	}
 }
 
-func (d *URLDeleter) DeleteURLsAsync(userID string, shortIDs []string) {
+func (d *URLDeleter) DeleteURLsAsync(userID string, shortIDs []string) error {
 	if len(shortIDs) == 0 {
-		return
+		return nil
 	}
 
 	select {
 	case d.inputChan <- deleteTask{userID: userID, shortIDs: shortIDs}:
+		return nil
 	default:
-		logger.Log.Warn("Delete channel is full, dropping delete request",
+		logger.Log.Warn("Delete channel is full, service overloaded",
 			zap.String("userID", userID),
 			zap.Int("shortIDsCount", len(shortIDs)))
+		return ErrServiceOverloaded
 	}
 }
