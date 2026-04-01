@@ -36,13 +36,20 @@ func (s *PostgresStorage) Save(ctx context.Context, id string, url string, userI
 
 func (s *PostgresStorage) Get(ctx context.Context, id string) (string, error) {
 	var originalURL string
+	var isDeleted bool
 	err := s.db.QueryRowContext(ctx,
-		`SELECT original_url FROM short_urls WHERE short_id = $1`, id,
-	).Scan(&originalURL)
+		`SELECT original_url, is_deleted FROM short_urls WHERE short_id = $1`, id,
+	).Scan(&originalURL, &isDeleted)
 	if errors.Is(err, sql.ErrNoRows) {
 		return "", ErrRecordNotFound
 	}
-	return originalURL, err
+	if err != nil {
+		return "", err
+	}
+	if isDeleted {
+		return "", ErrDeleted
+	}
+	return originalURL, nil
 }
 
 func (s *PostgresStorage) SaveListUrls(ctx context.Context, records []model.ShortURLRecord, userID string) error {
@@ -102,4 +109,33 @@ func (s *PostgresStorage) GetUserURLs(ctx context.Context, userID string) ([]mod
 	}
 
 	return urls, nil
+}
+
+func (s *PostgresStorage) DeleteURLsBatch(ctx context.Context, items []model.DeleteItem) error {
+	if len(items) == 0 {
+		return nil
+	}
+
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	stmt, err := tx.PrepareContext(ctx,
+		`UPDATE short_urls SET is_deleted = true 
+         WHERE short_id = $1 AND user_id = $2`)
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+
+	for _, item := range items {
+		_, err = stmt.ExecContext(ctx, item.ShortID, item.UserID)
+		if err != nil {
+			return err
+		}
+	}
+
+	return tx.Commit()
 }

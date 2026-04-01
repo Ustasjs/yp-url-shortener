@@ -73,7 +73,10 @@ func StartServer() {
 }
 
 func initRoutes(r *chi.Mux, s *settings.Settings, db *sql.DB, store shortener.Storage) {
-	shortenerService := shortener.NewShortener(store, s.BaseURL)
+	deleter := shortener.NewURLDeleter(store, 100, 5*time.Second)
+	deleter.Start(3)
+
+	shortenerService := shortener.NewShortener(store, s.BaseURL, deleter)
 	h := handler.NewHandler(shortenerService, db)
 
 	r.Post("/", h.CreateShortURL)
@@ -83,6 +86,7 @@ func initRoutes(r *chi.Mux, s *settings.Settings, db *sql.DB, store shortener.St
 	r.Post("/api/shorten", h.CreateShortURLJSONApi)
 	r.Post("/api/shorten/batch", h.CreateShortURLSByBatch)
 	r.Get("/api/user/urls", h.GetUserURLs)
+	r.Delete("/api/user/urls", h.DeleteUserURLs)
 }
 
 func initMiddleware(r *chi.Mux, store customMiddleware.UserRepository) {

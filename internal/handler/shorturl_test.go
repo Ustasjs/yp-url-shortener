@@ -57,6 +57,9 @@ func (m *mockShortener) CreateShortURLsBatch(_ctx context.Context, items []model
 	return res, nil
 }
 
+func (m *mockShortener) DeleteURLsAsync(userID string, shortIDs []string) {
+}
+
 type mockPingerOk struct{}
 
 func (p mockPingerOk) PingContext(_ctx context.Context) error {

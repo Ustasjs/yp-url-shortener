@@ -13,8 +13,9 @@ import (
 )
 
 type URLRecord struct {
-	URL    string
-	UserID string
+	URL       string
+	UserID    string
+	IsDeleted bool
 }
 
 type MemStorage struct {
@@ -40,7 +41,7 @@ func NewMemStorage(filePath string) *MemStorage {
 func (s *MemStorage) Save(_ctx context.Context, id string, url string, userID string) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	s.storage[id] = URLRecord{URL: url, UserID: userID}
+	s.storage[id] = URLRecord{URL: url, UserID: userID, IsDeleted: false}
 	err := s.SaveToFile()
 	if err != nil {
 		logger.Log.Error(err.Error())
@@ -56,6 +57,9 @@ func (s *MemStorage) Get(_ctx context.Context, id string) (string, error) {
 	if !ok {
 		return "", ErrRecordNotFound
 	}
+	if record.IsDeleted {
+		return "", ErrDeleted
+	}
 	return record.URL, nil
 }
 
@@ -63,7 +67,7 @@ func (s *MemStorage) SaveListUrls(_ctx context.Context, records []model.ShortURL
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	for _, rec := range records {
-		s.storage[rec.ID] = URLRecord{URL: rec.URL, UserID: userID}
+		s.storage[rec.ID] = URLRecord{URL: rec.URL, UserID: userID, IsDeleted: false}
 	}
 	return s.SaveToFile()
 }
@@ -124,4 +128,20 @@ func (s *MemStorage) GetUserURLs(_ctx context.Context, userID string) ([]model.U
 	}
 
 	return urls, nil
+}
+
+func (s *MemStorage) DeleteURLsBatch(_ctx context.Context, items []model.DeleteItem) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	for _, item := range items {
+		if record, exists := s.storage[item.ShortID]; exists {
+			if record.UserID == item.UserID {
+				record.IsDeleted = true
+				s.storage[item.ShortID] = record
+			}
+		}
+	}
+
+	return s.SaveToFile()
 }

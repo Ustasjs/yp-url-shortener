@@ -70,6 +70,10 @@ func (h *Handler) GetShortURLByID(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
 		id := r.PathValue("id")
 		originalURL, err := h.shortener.GetOriginalURL(ctx, id)
+		if errors.Is(err, repository.ErrDeleted) {
+			http.Error(w, "Gone", http.StatusGone)
+			return
+		}
 		if err != nil {
 			writeJSONError(w, "url not found", http.StatusNotFound)
 			return

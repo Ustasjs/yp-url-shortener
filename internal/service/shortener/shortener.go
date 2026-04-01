@@ -15,17 +15,20 @@ type Storage interface {
 	SaveListUrls(ctx context.Context, records []model.ShortURLRecord, userID string) error
 	CreateUser(ctx context.Context) (string, error)
 	GetUserURLs(ctx context.Context, userID string) ([]model.UserURLItem, error)
+	DeleteURLsBatch(ctx context.Context, items []model.DeleteItem) error
 }
 
 type Shortener struct {
 	repo    Storage
 	baseURL settings.BaseURL
+	deleter *URLDeleter
 }
 
-func NewShortener(repo Storage, baseURL settings.BaseURL) *Shortener {
+func NewShortener(repo Storage, baseURL settings.BaseURL, deleter *URLDeleter) *Shortener {
 	return &Shortener{
-		repo,
-		baseURL,
+		repo:    repo,
+		baseURL: baseURL,
+		deleter: deleter,
 	}
 }
 
@@ -79,4 +82,10 @@ func (s *Shortener) GetUserURLs(ctx context.Context, userID string) ([]model.Use
 	}
 
 	return items, nil
+}
+
+func (s *Shortener) DeleteURLsAsync(userID string, shortIDs []string) {
+	if s.deleter != nil {
+		s.deleter.DeleteURLsAsync(userID, shortIDs)
+	}
 }
