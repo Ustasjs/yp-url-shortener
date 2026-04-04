@@ -64,3 +64,25 @@ func Auth(userRepo UserRepository) func(http.Handler) http.Handler {
 		})
 	}
 }
+
+func RequireAuth() func(http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			cookie, err := r.Cookie(AuthCookieName)
+			if err == nil && cookie.Value != "" {
+				if _, err := service.GetUserID(cookie.Value); err != nil {
+					http.Error(w, "Unauthorized", http.StatusUnauthorized)
+					return
+				}
+			}
+
+			_, ok := GetUserIDFromContext(r.Context())
+			if !ok {
+				http.Error(w, "Unauthorized", http.StatusUnauthorized)
+				return
+			}
+
+			next.ServeHTTP(w, r)
+		})
+	}
+}

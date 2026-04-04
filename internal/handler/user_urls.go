@@ -2,20 +2,11 @@ package handler
 
 import (
 	"Ustasjs/yp-url-shortener/internal/middleware"
-	"Ustasjs/yp-url-shortener/internal/service"
 	"encoding/json"
 	"net/http"
 )
 
 func (h *Handler) GetUserURLs(w http.ResponseWriter, r *http.Request) {
-	cookie, err := r.Cookie(middleware.AuthCookieName)
-	if err == nil && cookie.Value != "" {
-		if _, err := service.GetUserID(cookie.Value); err != nil {
-			http.Error(w, "Unauthorized", http.StatusUnauthorized)
-			return
-		}
-	}
-
 	userID, ok := middleware.GetUserIDFromContext(r.Context())
 	if !ok {
 		http.Error(w, "Unauthorized", http.StatusUnauthorized)

@@ -85,8 +85,12 @@ func initRoutes(r *chi.Mux, s *settings.Settings, db *sql.DB, store shortener.St
 
 	r.Post("/api/shorten", h.CreateShortURLJSONApi)
 	r.Post("/api/shorten/batch", h.CreateShortURLSByBatch)
-	r.Get("/api/user/urls", h.GetUserURLs)
-	r.Delete("/api/user/urls", h.DeleteUserURLs)
+
+	r.Group(func(r chi.Router) {
+		r.Use(customMiddleware.RequireAuth())
+		r.Get("/api/user/urls", h.GetUserURLs)
+		r.Delete("/api/user/urls", h.DeleteUserURLs)
+	})
 }
 
 func initMiddleware(r *chi.Mux, store customMiddleware.UserRepository) {

@@ -130,7 +130,10 @@ func TestHandler_GetUserURLs(t *testing.T) {
 			h := handler.NewHandler(tt.shortener, pinger)
 
 			rr := httptest.NewRecorder()
-			h.GetUserURLs(rr, r)
+			
+			handlerFunc := http.HandlerFunc(h.GetUserURLs)
+			wrappedHandler := middleware.RequireAuth()(handlerFunc)
+			wrappedHandler.ServeHTTP(rr, r)
 
 			assert.Equal(t, tt.expectedStatus, rr.Code)
 
