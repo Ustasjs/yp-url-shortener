@@ -29,7 +29,7 @@ func newMockShortener() *mockShortener {
 	return &mockShortener{urls: make(map[string]string)}
 }
 
-func (m *mockShortener) CreateShortURL(_ctx context.Context, originalURL string) (string, error) {
+func (m *mockShortener) CreateShortURL(_ctx context.Context, originalURL string, userID string) (string, error) {
 	if m.CreateURLErr != nil {
 		return fmt.Sprintf("http://localhost:8080/%s", testShortURLID), m.CreateURLErr
 	}
@@ -45,7 +45,7 @@ func (m *mockShortener) GetOriginalURL(_ctx context.Context, id string) (string,
 	return u, nil
 }
 
-func (m *mockShortener) CreateShortURLsBatch(_ctx context.Context, items []model.BatchShortURLRequestItem) ([]model.BatchShortURLResponseItem, error) {
+func (m *mockShortener) CreateShortURLsBatch(_ctx context.Context, items []model.BatchShortURLRequestItem, userID string) ([]model.BatchShortURLResponseItem, error) {
 	res := make([]model.BatchShortURLResponseItem, 0, len(items))
 	for _, item := range items {
 		m.urls[testShortURLID] = item.OriginalURL

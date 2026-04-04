@@ -2,6 +2,7 @@ package handler
 
 import (
 	"Ustasjs/yp-url-shortener/internal/logger"
+	"Ustasjs/yp-url-shortener/internal/middleware"
 	"Ustasjs/yp-url-shortener/internal/model"
 	"Ustasjs/yp-url-shortener/internal/repository"
 	"encoding/json"
@@ -37,7 +38,8 @@ func (h *Handler) CreateShortURL(w http.ResponseWriter, r *http.Request) {
 		}
 
 		ctx := r.Context()
-		shortURL, err := h.shortener.CreateShortURL(ctx, validURL)
+		userID, _ := middleware.GetUserIDFromContext(ctx)
+		shortURL, err := h.shortener.CreateShortURL(ctx, validURL, userID)
 		var status int
 		hasConflict := errors.Is(err, repository.ErrConflict)
 
@@ -102,7 +104,8 @@ func (h *Handler) CreateShortURLJSONApi(w http.ResponseWriter, r *http.Request) 
 		}
 
 		ctx := r.Context()
-		shortURL, err := h.shortener.CreateShortURL(ctx, validURL)
+		userID, _ := middleware.GetUserIDFromContext(ctx)
+		shortURL, err := h.shortener.CreateShortURL(ctx, validURL, userID)
 		var status int
 		hasConflict := errors.Is(err, repository.ErrConflict)
 

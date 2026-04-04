@@ -2,6 +2,7 @@ package handler
 
 import (
 	"Ustasjs/yp-url-shortener/internal/logger"
+	"Ustasjs/yp-url-shortener/internal/middleware"
 	"Ustasjs/yp-url-shortener/internal/model"
 	"encoding/json"
 	"io"
@@ -30,7 +31,8 @@ func (h *Handler) CreateShortURLSByBatch(w http.ResponseWriter, r *http.Request)
 		}
 
 		ctx := r.Context()
-		response, err := h.shortener.CreateShortURLsBatch(ctx, request)
+		userID, _ := middleware.GetUserIDFromContext(ctx)
+		response, err := h.shortener.CreateShortURLsBatch(ctx, request, userID)
 		if err != nil {
 			logger.Log.Error(err.Error())
 			writeJSONError(w, "error saving batch", http.StatusInternalServerError)

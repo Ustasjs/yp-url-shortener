@@ -6,9 +6,9 @@ import (
 )
 
 type Shortener interface {
-	CreateShortURL(ctx context.Context, originalURL string) (string, error)
+	CreateShortURL(ctx context.Context, originalURL string, userID string) (string, error)
 	GetOriginalURL(ctx context.Context, id string) (string, error)
-	CreateShortURLsBatch(ctx context.Context, items []model.BatchShortURLRequestItem) ([]model.BatchShortURLResponseItem, error)
+	CreateShortURLsBatch(ctx context.Context, items []model.BatchShortURLRequestItem, userID string) ([]model.BatchShortURLResponseItem, error)
 	GetUserURLs(ctx context.Context, userID string) ([]model.UserURLItem, error)
 	DeleteURLsAsync(userID string, shortIDs []string) error
 }

@@ -2,7 +2,6 @@ package shortener
 
 import (
 	"Ustasjs/yp-url-shortener/internal/config/settings"
-	"Ustasjs/yp-url-shortener/internal/middleware"
 	"Ustasjs/yp-url-shortener/internal/model"
 	"context"
 	"fmt"
@@ -32,10 +31,9 @@ func NewShortener(repo Storage, baseURL settings.BaseURL, deleter *URLDeleter) *
 	}
 }
 
-func (s *Shortener) CreateShortURL(ctx context.Context, originalURL string) (string, error) {
+func (s *Shortener) CreateShortURL(ctx context.Context, originalURL string, userID string) (string, error) {
 	id := shortenURL(originalURL)
 	
-	userID, _ := middleware.GetUserIDFromContext(ctx)
 	err := s.repo.Save(ctx, id, originalURL, userID)
 
 	base := strings.TrimSuffix(string(s.baseURL), "/")
@@ -46,7 +44,7 @@ func (s *Shortener) GetOriginalURL(ctx context.Context, id string) (string, erro
 	return s.repo.Get(ctx, id)
 }
 
-func (s *Shortener) CreateShortURLsBatch(ctx context.Context, items []model.BatchShortURLRequestItem) ([]model.BatchShortURLResponseItem, error) {
+func (s *Shortener) CreateShortURLsBatch(ctx context.Context, items []model.BatchShortURLRequestItem, userID string) ([]model.BatchShortURLResponseItem, error) {
 	records := make([]model.ShortURLRecord, 0, len(items))
 
 	for _, item := range items {
@@ -54,7 +52,6 @@ func (s *Shortener) CreateShortURLsBatch(ctx context.Context, items []model.Batc
 		records = append(records, model.ShortURLRecord{ID: id, URL: item.OriginalURL})
 	}
 
-	userID, _ := middleware.GetUserIDFromContext(ctx)
 	if err := s.repo.SaveListUrls(ctx, records, userID); err != nil {
 		return nil, err
 	}
