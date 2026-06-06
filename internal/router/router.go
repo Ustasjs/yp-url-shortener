@@ -1,6 +1,7 @@
 package router
 
 import (
+	"Ustasjs/yp-url-shortener/internal/audit"
 	"Ustasjs/yp-url-shortener/internal/config/settings"
 	"Ustasjs/yp-url-shortener/internal/handler"
 	"Ustasjs/yp-url-shortener/internal/logger"
@@ -53,9 +54,11 @@ func StartServer() {
 		store = repository.NewMemStorage(string(settingsMap.FileStoragePath))
 	}
 
+	notifier := initAudit(settingsMap)
+
 	r := chi.NewRouter()
 	initMiddleware(r, store)
-	initRoutes(r, settingsMap, db, store)
+	initRoutes(r, settingsMap, db, store, notifier)
 
 	srv := &http.Server{
 		Addr:              string(settingsMap.ServerAddress),
@@ -72,12 +75,32 @@ func StartServer() {
 	}
 }
 
-func initRoutes(r *chi.Mux, s *settings.Settings, db *sql.DB, store shortener.Storage) {
+func initAudit(s *settings.Settings) *audit.Notifier {
+	notifier := audit.NewNotifier()
+
+	if s.AuditFile != "" {
+		fileObserver, err := audit.NewFileObserver(string(s.AuditFile))
+		if err != nil {
+			panic(err)
+		}
+		notifier.Attach(fileObserver)
+		logger.Log.Info("Audit file sink enabled", zap.String("path", string(s.AuditFile)))
+	}
+
+	if s.AuditURL != "" {
+		notifier.Attach(audit.NewHTTPObserver(string(s.AuditURL)))
+		logger.Log.Info("Audit HTTP sink enabled", zap.String("url", string(s.AuditURL)))
+	}
+
+	return notifier
+}
+
+func initRoutes(r *chi.Mux, s *settings.Settings, db *sql.DB, store shortener.Storage, notifier *audit.Notifier) {
 	deleter := shortener.NewURLDeleter(store, 100, 5*time.Second)
 	deleter.Start(3)
 
 	shortenerService := shortener.NewShortener(store, s.BaseURL, deleter)
-	h := handler.NewHandler(shortenerService, db)
+	h := handler.NewHandler(shortenerService, db, notifier)
 
 	r.Post("/", h.CreateShortURL)
 	r.Get("/{id}", h.GetShortURLByID)
