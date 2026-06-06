@@ -26,3 +26,13 @@ type ShortURLRecord struct {
 	ID  string `json:"id"`
 	URL string `json:"url"`
 }
+
+type UserURLItem struct {
+	ShortURL    string `json:"short_url"`
+	OriginalURL string `json:"original_url"`
+}
+
+type DeleteItem struct {
+	UserID  string
+	ShortID string
+}
