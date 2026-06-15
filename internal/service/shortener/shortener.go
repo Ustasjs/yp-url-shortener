@@ -4,7 +4,6 @@ import (
 	"Ustasjs/yp-url-shortener/internal/config/settings"
 	"Ustasjs/yp-url-shortener/internal/model"
 	"context"
-	"fmt"
 	"strings"
 )
 
@@ -37,7 +36,7 @@ func (s *Shortener) CreateShortURL(ctx context.Context, originalURL string, user
 	err := s.repo.Save(ctx, id, originalURL, userID)
 
 	base := strings.TrimSuffix(string(s.baseURL), "/")
-	return fmt.Sprintf("%s/%s", base, id), err
+	return base + "/" + id, err
 }
 
 func (s *Shortener) GetOriginalURL(ctx context.Context, id string) (string, error) {
@@ -61,7 +60,7 @@ func (s *Shortener) CreateShortURLsBatch(ctx context.Context, items []model.Batc
 	for i, item := range items {
 		response = append(response, model.BatchShortURLResponseItem{
 			CorrelationID: item.CorrelationID,
-			ShortURL:      fmt.Sprintf("%s/%s", base, records[i].ID),
+			ShortURL:      base + "/" + records[i].ID,
 		})
 	}
 	return response, nil
@@ -75,7 +74,7 @@ func (s *Shortener) GetUserURLs(ctx context.Context, userID string) ([]model.Use
 
 	base := strings.TrimSuffix(string(s.baseURL), "/")
 	for i := range items {
-		items[i].ShortURL = fmt.Sprintf("%s/%s", base, items[i].ShortURL)
+		items[i].ShortURL = base + "/" + items[i].ShortURL
 	}
 
 	return items, nil
