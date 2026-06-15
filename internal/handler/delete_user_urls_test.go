@@ -92,7 +92,7 @@ func TestHandler_DeleteUserURLs(t *testing.T) {
 				overloaded:    tt.overloaded,
 			}
 
-			h := handler.NewHandler(shortenerMock, newMockPingerOk())
+			h := handler.NewHandler(shortenerMock, newMockPingerOk(), newNoopAuditor())
 			rr := httptest.NewRecorder()
 
 			h.DeleteUserURLs(rr, r)

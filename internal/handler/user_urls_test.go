@@ -127,7 +127,7 @@ func TestHandler_GetUserURLs(t *testing.T) {
 			tt.setupCookie(r)
 
 			pinger := newMockPingerOk()
-			h := handler.NewHandler(tt.shortener, pinger)
+			h := handler.NewHandler(tt.shortener, pinger, newNoopAuditor())
 
 			rr := httptest.NewRecorder()
 			
