@@ -15,7 +15,7 @@ func encodeBase62(n uint64) string {
 		return string(alphabet[0])
 	}
 
-	var result []byte
+	result := make([]byte, 0, 11)
 	for n > 0 {
 		result = append(result, alphabet[n%62])
 		n /= 62

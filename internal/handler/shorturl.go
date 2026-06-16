@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"Ustasjs/yp-url-shortener/internal/audit"
 	"Ustasjs/yp-url-shortener/internal/logger"
 	"Ustasjs/yp-url-shortener/internal/middleware"
 	"Ustasjs/yp-url-shortener/internal/model"
@@ -11,6 +12,7 @@ import (
 	"net/http"
 	"net/url"
 	"strings"
+	"time"
 )
 
 func writeJSONError(w http.ResponseWriter, message string, status int) {
@@ -61,6 +63,13 @@ func (h *Handler) CreateShortURL(w http.ResponseWriter, r *http.Request) {
 			logger.Log.Error("internal server error")
 			return
 		}
+
+		h.publishAudit(audit.Event{
+			Timestamp: time.Now().Unix(),
+			Action:    audit.ActionShorten,
+			UserID:    userID,
+			URL:       validURL,
+		})
 		return
 	} else {
 		writeJSONError(w, "Only POST requests are allowed", http.StatusBadRequest)
@@ -80,6 +89,15 @@ func (h *Handler) GetShortURLByID(w http.ResponseWriter, r *http.Request) {
 			writeJSONError(w, "url not found", http.StatusNotFound)
 			return
 		}
+
+		userID, _ := middleware.GetUserIDFromContext(ctx)
+		h.publishAudit(audit.Event{
+			Timestamp: time.Now().Unix(),
+			Action:    audit.ActionFollow,
+			UserID:    userID,
+			URL:       originalURL,
+		})
+
 		http.Redirect(w, r, originalURL, http.StatusTemporaryRedirect)
 	} else {
 		writeJSONError(w, "Only GET requests are allowed", http.StatusBadRequest)
@@ -132,10 +150,24 @@ func (h *Handler) CreateShortURLJSONApi(w http.ResponseWriter, r *http.Request) 
 			writeJSONError(w, "error encoding response", http.StatusBadRequest)
 			return
 		}
+
+		h.publishAudit(audit.Event{
+			Timestamp: time.Now().Unix(),
+			Action:    audit.ActionShorten,
+			UserID:    userID,
+			URL:       validURL,
+		})
 		return
 	} else {
 		writeJSONError(w, "Only POST requests are allowed", http.StatusBadRequest)
 	}
+}
+
+func (h *Handler) publishAudit(event audit.Event) {
+	if h.auditor == nil {
+		return
+	}
+	h.auditor.Publish(event)
 }
 
 func parseURL(raw string) (string, error) {

@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"Ustasjs/yp-url-shortener/internal/audit"
 	"Ustasjs/yp-url-shortener/internal/model"
 	"context"
 )
@@ -17,11 +18,16 @@ type Pinger interface {
 	PingContext(ctx context.Context) error
 }
 
+type AuditPublisher interface {
+	Publish(event audit.Event)
+}
+
 type Handler struct {
 	shortener Shortener
 	pinger    Pinger
+	auditor   AuditPublisher
 }
 
-func NewHandler(shortener Shortener, pinger Pinger) *Handler {
-	return &Handler{shortener: shortener, pinger: pinger}
+func NewHandler(shortener Shortener, pinger Pinger, auditor AuditPublisher) *Handler {
+	return &Handler{shortener: shortener, pinger: pinger, auditor: auditor}
 }

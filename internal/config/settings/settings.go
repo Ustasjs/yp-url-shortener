@@ -10,6 +10,8 @@ type ServerAddress string
 type BaseURL string
 type FileStoragePath string
 type DatabaseDSN string
+type AuditFile string
+type AuditURL string
 
 type Settings struct {
 	ServerAddress   ServerAddress
@@ -17,6 +19,8 @@ type Settings struct {
 	LogLevel        zap.AtomicLevel
 	FileStoragePath FileStoragePath
 	DatabaseDSN     DatabaseDSN
+	AuditFile       AuditFile
+	AuditURL        AuditURL
 }
 
 func InitSettings() *Settings {
@@ -27,6 +31,8 @@ func InitSettings() *Settings {
 	initLogLevel(settings)
 	initFileStoragePath(settings)
 	initDatabaseDSN(settings)
+	initAuditFile(settings)
+	initAuditURL(settings)
 
 	flag.Parse()
 
