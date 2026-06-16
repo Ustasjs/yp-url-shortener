@@ -16,11 +16,11 @@ import (
 
 func TestHTTPObserver_PostsEventAsJSON(t *testing.T) {
 	var (
-		mu          sync.Mutex
-		gotMethod   string
-		gotCT       string
-		gotEvent    audit.Event
-		received    = make(chan struct{}, 1)
+		mu        sync.Mutex
+		gotMethod string
+		gotCT     string
+		gotEvent  audit.Event
+		received  = make(chan struct{}, 1)
 	)
 
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

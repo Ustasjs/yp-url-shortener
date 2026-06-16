@@ -32,7 +32,7 @@ func NewShortener(repo Storage, baseURL settings.BaseURL, deleter *URLDeleter) *
 
 func (s *Shortener) CreateShortURL(ctx context.Context, originalURL string, userID string) (string, error) {
 	id := shortenURL(originalURL)
-	
+
 	err := s.repo.Save(ctx, id, originalURL, userID)
 
 	base := strings.TrimSuffix(string(s.baseURL), "/")

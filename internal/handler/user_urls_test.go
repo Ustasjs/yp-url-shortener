@@ -130,7 +130,7 @@ func TestHandler_GetUserURLs(t *testing.T) {
 			h := handler.NewHandler(tt.shortener, pinger, newNoopAuditor())
 
 			rr := httptest.NewRecorder()
-			
+
 			handlerFunc := http.HandlerFunc(h.GetUserURLs)
 			wrappedHandler := middleware.RequireAuth()(handlerFunc)
 			wrappedHandler.ServeHTTP(rr, r)
@@ -139,12 +139,12 @@ func TestHandler_GetUserURLs(t *testing.T) {
 
 			if tt.checkJSON {
 				assert.Equal(t, "application/json", rr.Header().Get("Content-Type"))
-				
+
 				var urls []model.UserURLItem
 				err := json.NewDecoder(rr.Body).Decode(&urls)
 				require.NoError(t, err)
 				assert.Greater(t, len(urls), 0)
-				
+
 				for _, url := range urls {
 					assert.NotEmpty(t, url.ShortURL)
 					assert.NotEmpty(t, url.OriginalURL)
