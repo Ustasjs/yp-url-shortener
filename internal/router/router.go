@@ -1,3 +1,5 @@
+// Package router wires together configuration, logging, storage, services,
+// middleware and HTTP routes, and runs the server.
 package router
 
 import (
@@ -20,6 +22,9 @@ import (
 	"go.uber.org/zap"
 )
 
+// StartServer loads configuration, initializes logging, storage and the audit
+// subsystem, registers all routes and middleware, and starts the HTTP server.
+// It blocks until the server stops and panics on a fatal startup error.
 func StartServer() {
 	settingsMap := settings.InitSettings()
 	loggerErr := logger.Initialize(settingsMap.LogLevel)
