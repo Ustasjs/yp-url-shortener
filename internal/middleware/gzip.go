@@ -5,6 +5,8 @@ import (
 	"net/http"
 )
 
+// GzipDecompress is HTTP middleware that transparently decompresses request
+// bodies sent with Content-Encoding: gzip.
 func GzipDecompress(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Header.Get("Content-Encoding") == "gzip" {
