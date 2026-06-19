@@ -7,16 +7,22 @@ import (
 	"errors"
 )
 
+// PostgresStorage is a Storage backend backed by PostgreSQL.
 type PostgresStorage struct {
 	db *sql.DB
 }
 
+// NewPostgresStorage returns a PostgresStorage that uses the given database
+// handle.
 func NewPostgresStorage(db *sql.DB) *PostgresStorage {
 	return &PostgresStorage{db: db}
 }
 
+// ErrConflict is returned when a URL being saved already exists in storage.
 var ErrConflict = errors.New("url already exists")
 
+// Save inserts a single short URL. It returns ErrConflict if the original URL is
+// already stored.
 func (s *PostgresStorage) Save(ctx context.Context, id string, url string, userID string) error {
 	result, err := s.db.ExecContext(ctx,
 		`INSERT INTO short_urls (short_id, original_url, user_id)
@@ -34,6 +40,8 @@ func (s *PostgresStorage) Save(ctx context.Context, id string, url string, userI
 	return nil
 }
 
+// Get returns the original URL for id. It returns ErrRecordNotFound if the id is
+// unknown and ErrDeleted if the URL has been soft-deleted.
 func (s *PostgresStorage) Get(ctx context.Context, id string) (string, error) {
 	var originalURL string
 	var isDeleted bool
@@ -52,6 +60,8 @@ func (s *PostgresStorage) Get(ctx context.Context, id string) (string, error) {
 	return originalURL, nil
 }
 
+// SaveListUrls inserts a batch of records in a single transaction, ignoring URLs
+// that already exist.
 func (s *PostgresStorage) SaveListUrls(ctx context.Context, records []model.ShortURLRecord, userID string) error {
 	if len(records) == 0 {
 		return nil
@@ -77,6 +87,7 @@ func (s *PostgresStorage) SaveListUrls(ctx context.Context, records []model.Shor
 	return tx.Commit()
 }
 
+// CreateUser inserts a new user row and returns its generated identifier.
 func (s *PostgresStorage) CreateUser(ctx context.Context) (string, error) {
 	var userID string
 	err := s.db.QueryRowContext(ctx,
@@ -85,6 +96,7 @@ func (s *PostgresStorage) CreateUser(ctx context.Context) (string, error) {
 	return userID, err
 }
 
+// GetUserURLs returns every short/original URL pair owned by userID.
 func (s *PostgresStorage) GetUserURLs(ctx context.Context, userID string) ([]model.UserURLItem, error) {
 	rows, err := s.db.QueryContext(ctx,
 		`SELECT short_id, original_url FROM short_urls WHERE user_id = $1`,
@@ -111,6 +123,8 @@ func (s *PostgresStorage) GetUserURLs(ctx context.Context, userID string) ([]mod
 	return urls, nil
 }
 
+// DeleteURLsBatch soft-deletes the given items, marking each matching row as
+// deleted within a single transaction.
 func (s *PostgresStorage) DeleteURLsBatch(ctx context.Context, items []model.DeleteItem) error {
 	if len(items) == 0 {
 		return nil
