@@ -11,11 +11,15 @@ import (
 	"go.uber.org/zap"
 )
 
+// HTTPObserver is an audit Observer that delivers events as JSON to a remote
+// HTTP endpoint.
 type HTTPObserver struct {
 	url    string
 	client *http.Client
 }
 
+// NewHTTPObserver returns an HTTPObserver that POSTs events to url with a short
+// timeout.
 func NewHTTPObserver(url string) *HTTPObserver {
 	return &HTTPObserver{
 		url:    url,
@@ -23,6 +27,8 @@ func NewHTTPObserver(url string) *HTTPObserver {
 	}
 }
 
+// Notify sends event as a JSON POST request to the configured URL. Errors and
+// non-2xx responses are logged rather than returned.
 func (h *HTTPObserver) Notify(event Event) {
 	data, err := json.Marshal(event)
 	if err != nil {
