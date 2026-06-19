@@ -6,6 +6,10 @@ import (
 	"net/http"
 )
 
+// GetUserURLs handles GET /api/user/urls and returns, as JSON, every URL created
+// by the authenticated user. It responds with 401 Unauthorized when the request
+// carries no user identity, 204 No Content when the user has no URLs, and 200 OK
+// otherwise.
 func (h *Handler) GetUserURLs(w http.ResponseWriter, r *http.Request) {
 	userID, ok := middleware.GetUserIDFromContext(r.Context())
 	if !ok {

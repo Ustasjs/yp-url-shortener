@@ -21,6 +21,10 @@ func writeJSONError(w http.ResponseWriter, message string, status int) {
 	json.NewEncoder(w).Encode(model.ErrorResponse{Error: message})
 }
 
+// CreateShortURL handles POST / with a plain-text body containing the URL to
+// shorten. On success it responds with 201 Created (or 409 Conflict if the URL
+// was already shortened) and writes the short URL as text/plain. Invalid input
+// yields 400 Bad Request.
 func (h *Handler) CreateShortURL(w http.ResponseWriter, r *http.Request) {
 	if r.Method == http.MethodPost {
 		bodyBytes, err := io.ReadAll(io.LimitReader(r.Body, 1<<20))
@@ -76,6 +80,9 @@ func (h *Handler) CreateShortURL(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// GetShortURLByID handles GET /{id} and redirects to the original URL with 307
+// Temporary Redirect. It responds with 404 Not Found for an unknown id and 410
+// Gone if the URL has been deleted.
 func (h *Handler) GetShortURLByID(w http.ResponseWriter, r *http.Request) {
 	if r.Method == http.MethodGet {
 		ctx := r.Context()
@@ -104,6 +111,10 @@ func (h *Handler) GetShortURLByID(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// CreateShortURLJSONApi handles POST /api/shorten with a JSON body
+// (model.CreateShortURLRequest). It responds with 201 Created (or 409 Conflict
+// if the URL already exists) and a model.CreateShortURLResponce JSON body.
+// Invalid input yields 400 Bad Request.
 func (h *Handler) CreateShortURLJSONApi(w http.ResponseWriter, r *http.Request) {
 	if r.Method == http.MethodPost {
 		decoder := json.NewDecoder(r.Body)

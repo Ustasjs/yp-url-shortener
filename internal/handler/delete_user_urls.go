@@ -8,6 +8,11 @@ import (
 	"net/http"
 )
 
+// DeleteUserURLs handles DELETE /api/user/urls. It accepts a JSON array of short
+// IDs and schedules their asynchronous deletion for the authenticated user,
+// responding with 202 Accepted. It returns 401 Unauthorized without a user
+// identity, 400 Bad Request for an invalid or empty body, and 503 Service
+// Unavailable when the deletion queue is overloaded.
 func (h *Handler) DeleteUserURLs(w http.ResponseWriter, r *http.Request) {
 	userID, ok := middleware.GetUserIDFromContext(r.Context())
 	if !ok {
