@@ -12,8 +12,12 @@ import (
 	"Ustasjs/yp-url-shortener/internal/service/shortener"
 	"Ustasjs/yp-url-shortener/migrations"
 	"compress/gzip"
+	"context"
 	"database/sql"
+	"errors"
 	"net/http"
+	"os/signal"
+	"syscall"
 	"time"
 
 	"github.com/go-chi/chi/v5"
@@ -74,10 +78,31 @@ func StartServer() {
 		IdleTimeout:       120 * time.Second,
 	}
 
-	err := srv.ListenAndServe()
-	if err != nil {
-		panic(err)
+	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
+	defer stop()
+
+	serverErr := make(chan error, 1)
+	go func() {
+		serverErr <- srv.ListenAndServe()
+	}()
+
+	select {
+	case err := <-serverErr:
+		if err != nil && !errors.Is(err, http.ErrServerClosed) {
+			panic(err)
+		}
+	case <-ctx.Done():
+		stop()
+		logger.Log.Info("Shutting down server")
+
+		shutdownCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		defer cancel()
+		if err := srv.Shutdown(shutdownCtx); err != nil {
+			logger.Log.Error("Server shutdown failed", zap.Error(err))
+		}
 	}
+
+	notifier.Close()
 }
 
 func initAudit(s *settings.Settings) *audit.Notifier {
