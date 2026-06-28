@@ -76,8 +76,7 @@ func BenchmarkCreateShortURLsBatch(b *testing.B) {
 	ctx := context.Background()
 
 	b.ReportAllocs()
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		if _, err := s.CreateShortURLsBatch(ctx, items, "user"); err != nil {
 			b.Fatal(err)
 		}
