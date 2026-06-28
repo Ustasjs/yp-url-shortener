@@ -1,7 +1,6 @@
 package audit
 
 import (
-	"context"
 	"encoding/json"
 	"net/http"
 	"time"
@@ -44,10 +43,7 @@ func (h *HTTPObserver) Notify(event Event) {
 		return
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
-	defer cancel()
-
-	req, err := retryablehttp.NewRequestWithContext(ctx, http.MethodPost, h.url, data)
+	req, err := retryablehttp.NewRequest(http.MethodPost, h.url, data)
 	if err != nil {
 		logger.Log.Error("audit: build http request failed", zap.Error(err))
 		return
