@@ -30,10 +30,15 @@ import (
 // subsystem, registers all routes and middleware, and starts the HTTP server.
 // It blocks until the server stops and panics on a fatal startup error.
 func StartServer() {
-	settingsMap := settings.InitSettings()
+	settingsMap, settingsErr := settings.InitSettings()
+
 	loggerErr := logger.Initialize(settingsMap.LogLevel)
 	if loggerErr != nil {
 		panic(loggerErr)
+	}
+
+	if settingsErr != nil {
+		logger.Log.Fatal("Invalid configuration", zap.Error(settingsErr))
 	}
 
 	var db *sql.DB

@@ -22,7 +22,7 @@ func validateAuditURL(raw string) error {
 	return nil
 }
 
-func initAuditURL(settings *Settings) {
+func initAuditURL(settings *Settings) error {
 	flag.Func("audit-url", "Remote audit sink URL (empty disables HTTP sink)", func(flagValue string) error {
 		if err := validateAuditURL(flagValue); err != nil {
 			return err
@@ -33,8 +33,9 @@ func initAuditURL(settings *Settings) {
 
 	if env := os.Getenv("AUDIT_URL"); env != "" {
 		if err := validateAuditURL(env); err != nil {
-			panic(err)
+			return err
 		}
 		settings.AuditURL = AuditURL(env)
 	}
+	return nil
 }

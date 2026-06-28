@@ -22,7 +22,7 @@ func validateServerAddress(serverAddress string) error {
 	return nil
 }
 
-func initServerAddress(settings *Settings) {
+func initServerAddress(settings *Settings) error {
 	var serverAddressValue ServerAddress = "localhost:8080"
 	settings.ServerAddress = serverAddressValue
 
@@ -38,8 +38,9 @@ func initServerAddress(settings *Settings) {
 	if envServerAddress := os.Getenv("SERVER_ADDRESS"); envServerAddress != "" {
 		err := validateServerAddress(envServerAddress)
 		if err != nil {
-			panic(err)
+			return err
 		}
 		settings.ServerAddress = ServerAddress(envServerAddress)
 	}
+	return nil
 }

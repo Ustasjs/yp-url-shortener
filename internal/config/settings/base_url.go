@@ -17,7 +17,7 @@ func validateBaseURL(baseURL string) error {
 	return nil
 }
 
-func initBaseURL(settings *Settings) {
+func initBaseURL(settings *Settings) error {
 	var baseURLvalue BaseURL = "http://localhost:8080"
 	settings.BaseURL = baseURLvalue
 
@@ -34,8 +34,9 @@ func initBaseURL(settings *Settings) {
 	if envBaseURL := os.Getenv("BASE_URL"); envBaseURL != "" {
 		err := validateBaseURL(envBaseURL)
 		if err != nil {
-			panic(err)
+			return err
 		}
 		settings.BaseURL = BaseURL(envBaseURL)
 	}
+	return nil
 }
