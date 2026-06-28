@@ -1,11 +1,12 @@
 package handler
 
 import (
-	"Ustasjs/yp-url-shortener/internal/middleware"
-	"Ustasjs/yp-url-shortener/internal/service/shortener"
 	"encoding/json"
 	"errors"
 	"net/http"
+
+	"Ustasjs/yp-url-shortener/internal/middleware"
+	"Ustasjs/yp-url-shortener/internal/service/shortener"
 )
 
 // DeleteUserURLs handles DELETE /api/user/urls. It accepts a JSON array of short

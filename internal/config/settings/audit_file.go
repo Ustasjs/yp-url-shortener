@@ -41,7 +41,7 @@ func initAuditFile(settings *Settings) error {
 		settings.AuditFile = AuditFile(flagValue)
 		return nil
 	})
-	
+
 	if env, ok := os.LookupEnv("AUDIT_FILE"); ok {
 		if env != "" {
 			if err := validateAuditFile(env); err != nil {

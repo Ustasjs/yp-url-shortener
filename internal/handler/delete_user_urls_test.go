@@ -1,15 +1,16 @@
 package handler_test
 
 import (
-	"Ustasjs/yp-url-shortener/internal/handler"
-	"Ustasjs/yp-url-shortener/internal/middleware"
-	"Ustasjs/yp-url-shortener/internal/service/shortener"
 	"bytes"
 	"context"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"testing"
+
+	"Ustasjs/yp-url-shortener/internal/handler"
+	"Ustasjs/yp-url-shortener/internal/middleware"
+	"Ustasjs/yp-url-shortener/internal/service/shortener"
 
 	"github.com/stretchr/testify/assert"
 )

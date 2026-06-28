@@ -1,10 +1,11 @@
 package repository
 
 import (
-	"Ustasjs/yp-url-shortener/internal/model"
 	"context"
 	"database/sql"
 	"errors"
+
+	"Ustasjs/yp-url-shortener/internal/model"
 )
 
 // PostgresStorage is a Storage backend backed by PostgreSQL.

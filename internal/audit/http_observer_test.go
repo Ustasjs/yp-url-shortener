@@ -1,7 +1,6 @@
 package audit_test
 
 import (
-	"Ustasjs/yp-url-shortener/internal/audit"
 	"encoding/json"
 	"io"
 	"net/http"
@@ -9,6 +8,8 @@ import (
 	"sync"
 	"testing"
 	"time"
+
+	"Ustasjs/yp-url-shortener/internal/audit"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"

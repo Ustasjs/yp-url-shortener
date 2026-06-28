@@ -4,10 +4,11 @@
 package shortener
 
 import (
-	"Ustasjs/yp-url-shortener/internal/config/settings"
-	"Ustasjs/yp-url-shortener/internal/model"
 	"context"
 	"strings"
+
+	"Ustasjs/yp-url-shortener/internal/config/settings"
+	"Ustasjs/yp-url-shortener/internal/model"
 )
 
 // Storage abstracts the persistence layer used by the Shortener service.

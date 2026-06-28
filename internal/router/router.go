@@ -3,14 +3,6 @@
 package router
 
 import (
-	"Ustasjs/yp-url-shortener/internal/audit"
-	"Ustasjs/yp-url-shortener/internal/config/settings"
-	"Ustasjs/yp-url-shortener/internal/handler"
-	"Ustasjs/yp-url-shortener/internal/logger"
-	customMiddleware "Ustasjs/yp-url-shortener/internal/middleware"
-	"Ustasjs/yp-url-shortener/internal/repository"
-	"Ustasjs/yp-url-shortener/internal/service/shortener"
-	"Ustasjs/yp-url-shortener/migrations"
 	"compress/gzip"
 	"context"
 	"database/sql"
@@ -19,6 +11,15 @@ import (
 	"os/signal"
 	"syscall"
 	"time"
+
+	"Ustasjs/yp-url-shortener/internal/audit"
+	"Ustasjs/yp-url-shortener/internal/config/settings"
+	"Ustasjs/yp-url-shortener/internal/handler"
+	"Ustasjs/yp-url-shortener/internal/logger"
+	customMiddleware "Ustasjs/yp-url-shortener/internal/middleware"
+	"Ustasjs/yp-url-shortener/internal/repository"
+	"Ustasjs/yp-url-shortener/internal/service/shortener"
+	"Ustasjs/yp-url-shortener/migrations"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"

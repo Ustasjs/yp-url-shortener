@@ -1,11 +1,6 @@
 package handler_test
 
 import (
-	"Ustasjs/yp-url-shortener/internal/audit"
-	"Ustasjs/yp-url-shortener/internal/handler"
-	customMiddleware "Ustasjs/yp-url-shortener/internal/middleware"
-	"Ustasjs/yp-url-shortener/internal/model"
-	"Ustasjs/yp-url-shortener/internal/repository"
 	"bytes"
 	"compress/gzip"
 	"context"
@@ -16,6 +11,12 @@ import (
 	"strings"
 	"sync"
 	"testing"
+
+	"Ustasjs/yp-url-shortener/internal/audit"
+	"Ustasjs/yp-url-shortener/internal/handler"
+	customMiddleware "Ustasjs/yp-url-shortener/internal/middleware"
+	"Ustasjs/yp-url-shortener/internal/model"
+	"Ustasjs/yp-url-shortener/internal/repository"
 
 	"github.com/stretchr/testify/assert"
 )

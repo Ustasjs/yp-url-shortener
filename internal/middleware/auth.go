@@ -4,10 +4,11 @@
 package middleware
 
 import (
-	"Ustasjs/yp-url-shortener/internal/logger"
-	"Ustasjs/yp-url-shortener/internal/service"
 	"context"
 	"net/http"
+
+	"Ustasjs/yp-url-shortener/internal/logger"
+	"Ustasjs/yp-url-shortener/internal/service"
 
 	"go.uber.org/zap"
 )

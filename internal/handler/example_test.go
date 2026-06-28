@@ -1,16 +1,17 @@
 package handler_test
 
 import (
-	"Ustasjs/yp-url-shortener/internal/handler"
-	"Ustasjs/yp-url-shortener/internal/middleware"
-	"Ustasjs/yp-url-shortener/internal/repository"
-	"Ustasjs/yp-url-shortener/internal/service/shortener"
 	"context"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"os"
 	"strings"
+
+	"Ustasjs/yp-url-shortener/internal/handler"
+	"Ustasjs/yp-url-shortener/internal/middleware"
+	"Ustasjs/yp-url-shortener/internal/repository"
+	"Ustasjs/yp-url-shortener/internal/service/shortener"
 )
 
 const exampleBaseURL = "http://localhost:8080"

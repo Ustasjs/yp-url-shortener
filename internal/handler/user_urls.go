@@ -1,9 +1,10 @@
 package handler
 
 import (
-	"Ustasjs/yp-url-shortener/internal/middleware"
 	"encoding/json"
 	"net/http"
+
+	"Ustasjs/yp-url-shortener/internal/middleware"
 )
 
 // GetUserURLs handles GET /api/user/urls and returns, as JSON, every URL created

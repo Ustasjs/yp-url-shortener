@@ -1,11 +1,12 @@
 package audit
 
 import (
-	"Ustasjs/yp-url-shortener/internal/logger"
 	"encoding/json"
 	"fmt"
 	"os"
 	"sync"
+
+	"Ustasjs/yp-url-shortener/internal/logger"
 
 	"go.uber.org/zap"
 )

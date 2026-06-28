@@ -1,13 +1,14 @@
 package handler
 
 import (
-	"Ustasjs/yp-url-shortener/internal/logger"
-	"Ustasjs/yp-url-shortener/internal/middleware"
-	"Ustasjs/yp-url-shortener/internal/model"
 	"encoding/json"
 	"io"
 	"net/http"
 	"net/url"
+
+	"Ustasjs/yp-url-shortener/internal/logger"
+	"Ustasjs/yp-url-shortener/internal/middleware"
+	"Ustasjs/yp-url-shortener/internal/model"
 )
 
 // CreateShortURLSByBatch handles POST /api/shorten/batch. It accepts a JSON

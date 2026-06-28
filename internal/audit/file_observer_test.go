@@ -1,13 +1,14 @@
 package audit_test
 
 import (
-	"Ustasjs/yp-url-shortener/internal/audit"
 	"bufio"
 	"encoding/json"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"Ustasjs/yp-url-shortener/internal/audit"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"

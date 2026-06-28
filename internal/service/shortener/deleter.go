@@ -1,11 +1,12 @@
 package shortener
 
 import (
-	"Ustasjs/yp-url-shortener/internal/logger"
-	"Ustasjs/yp-url-shortener/internal/model"
 	"context"
 	"errors"
 	"time"
+
+	"Ustasjs/yp-url-shortener/internal/logger"
+	"Ustasjs/yp-url-shortener/internal/model"
 
 	"go.uber.org/zap"
 )

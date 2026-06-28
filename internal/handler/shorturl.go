@@ -1,11 +1,6 @@
 package handler
 
 import (
-	"Ustasjs/yp-url-shortener/internal/audit"
-	"Ustasjs/yp-url-shortener/internal/logger"
-	"Ustasjs/yp-url-shortener/internal/middleware"
-	"Ustasjs/yp-url-shortener/internal/model"
-	"Ustasjs/yp-url-shortener/internal/repository"
 	"encoding/json"
 	"errors"
 	"io"
@@ -13,6 +8,12 @@ import (
 	"net/url"
 	"strings"
 	"time"
+
+	"Ustasjs/yp-url-shortener/internal/audit"
+	"Ustasjs/yp-url-shortener/internal/logger"
+	"Ustasjs/yp-url-shortener/internal/middleware"
+	"Ustasjs/yp-url-shortener/internal/model"
+	"Ustasjs/yp-url-shortener/internal/repository"
 )
 
 func writeJSONError(w http.ResponseWriter, message string, status int) {
