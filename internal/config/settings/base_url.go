@@ -31,9 +31,8 @@ func initBaseURL(settings *Settings) error {
 		return nil
 	})
 
-	if envBaseURL := os.Getenv("BASE_URL"); envBaseURL != "" {
-		err := validateBaseURL(envBaseURL)
-		if err != nil {
+	if envBaseURL, ok := os.LookupEnv("BASE_URL"); ok {
+		if err := validateBaseURL(envBaseURL); err != nil {
 			return err
 		}
 		settings.BaseURL = BaseURL(envBaseURL)

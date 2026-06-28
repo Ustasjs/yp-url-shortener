@@ -31,9 +31,11 @@ func initAuditURL(settings *Settings) error {
 		return nil
 	})
 
-	if env := os.Getenv("AUDIT_URL"); env != "" {
-		if err := validateAuditURL(env); err != nil {
-			return err
+	if env, ok := os.LookupEnv("AUDIT_URL"); ok {
+		if env != "" {
+			if err := validateAuditURL(env); err != nil {
+				return err
+			}
 		}
 		settings.AuditURL = AuditURL(env)
 	}

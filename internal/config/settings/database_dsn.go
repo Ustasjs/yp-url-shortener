@@ -11,7 +11,7 @@ func initDatabaseDSN(settings *Settings) {
 		return nil
 	})
 
-	if envBaseDatabaseDsn := os.Getenv("DATABASE_DSN"); envBaseDatabaseDsn != "" {
+	if envBaseDatabaseDsn, ok := os.LookupEnv("DATABASE_DSN"); ok {
 		settings.DatabaseDSN = DatabaseDSN(envBaseDatabaseDsn)
 	}
 }

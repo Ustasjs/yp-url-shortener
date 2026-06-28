@@ -46,9 +46,8 @@ func initFileStoragePath(settings *Settings) error {
 		return nil
 	})
 
-	if envFileStoragePath := os.Getenv("FILE_STORAGE_PATH"); envFileStoragePath != "" {
-		err := validateFileStoragePath(envFileStoragePath)
-		if err != nil {
+	if envFileStoragePath, ok := os.LookupEnv("FILE_STORAGE_PATH"); ok {
+		if err := validateFileStoragePath(envFileStoragePath); err != nil {
 			return err
 		}
 		settings.FileStoragePath = FileStoragePath(envFileStoragePath)

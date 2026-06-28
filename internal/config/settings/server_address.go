@@ -35,9 +35,8 @@ func initServerAddress(settings *Settings) error {
 		return nil
 	})
 
-	if envServerAddress := os.Getenv("SERVER_ADDRESS"); envServerAddress != "" {
-		err := validateServerAddress(envServerAddress)
-		if err != nil {
+	if envServerAddress, ok := os.LookupEnv("SERVER_ADDRESS"); ok {
+		if err := validateServerAddress(envServerAddress); err != nil {
 			return err
 		}
 		settings.ServerAddress = ServerAddress(envServerAddress)

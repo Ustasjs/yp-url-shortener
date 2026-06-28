@@ -21,7 +21,7 @@ func initLogLevel(settings *Settings) error {
 		return nil
 	})
 
-	if envLogLevel := os.Getenv("LOG_LEVEL"); envLogLevel != "" {
+	if envLogLevel, ok := os.LookupEnv("LOG_LEVEL"); ok {
 		lvl, err := zap.ParseAtomicLevel(envLogLevel)
 		if err != nil {
 			return err
