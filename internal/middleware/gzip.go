@@ -3,6 +3,10 @@ package middleware
 import (
 	"compress/gzip"
 	"net/http"
+
+	"Ustasjs/yp-url-shortener/internal/logger"
+
+	"go.uber.org/zap"
 )
 
 // GzipDecompress is HTTP middleware that transparently decompresses request
@@ -15,7 +19,11 @@ func GzipDecompress(next http.Handler) http.Handler {
 				http.Error(w, "invalid gzip body", http.StatusBadRequest)
 				return
 			}
-			defer gz.Close()
+			defer func() {
+				if err := gz.Close(); err != nil {
+					logger.Log.Error("close gzip reader failed", zap.Error(err))
+				}
+			}()
 			r.Body = gz
 		}
 		next.ServeHTTP(w, r)

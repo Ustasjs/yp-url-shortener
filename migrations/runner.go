@@ -1,3 +1,5 @@
+// Package migrations applies the database schema migrations bundled with the
+// service.
 package migrations
 
 import (

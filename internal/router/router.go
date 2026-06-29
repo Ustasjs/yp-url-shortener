@@ -52,7 +52,11 @@ func StartServer() {
 		if dbErr != nil {
 			panic(dbErr)
 		}
-		defer db.Close()
+		defer func() {
+			if err := db.Close(); err != nil {
+				logger.Log.Error("close database failed", zap.Error(err))
+			}
+		}()
 
 		migrationsErr := migrations.RunMigrations(db)
 		if migrationsErr != nil {
