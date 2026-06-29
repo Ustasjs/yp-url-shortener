@@ -14,12 +14,16 @@ import (
 	"Ustasjs/yp-url-shortener/internal/middleware"
 	"Ustasjs/yp-url-shortener/internal/model"
 	"Ustasjs/yp-url-shortener/internal/repository"
+
+	"go.uber.org/zap"
 )
 
 func writeJSONError(w http.ResponseWriter, message string, status int) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
-	json.NewEncoder(w).Encode(model.ErrorResponse{Error: message})
+	if err := json.NewEncoder(w).Encode(model.ErrorResponse{Error: message}); err != nil {
+		logger.Log.Error("encode error response failed", zap.Error(err))
+	}
 }
 
 // CreateShortURL handles POST / with a plain-text body containing the URL to

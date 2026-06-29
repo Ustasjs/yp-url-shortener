@@ -20,7 +20,7 @@ func TestFileObserver_AppendsJSONLines(t *testing.T) {
 
 	observer, err := audit.NewFileObserver(path)
 	require.NoError(t, err)
-	defer observer.Close()
+	defer func() { _ = observer.Close() }()
 
 	events := []audit.Event{
 		{Timestamp: 100, Action: audit.ActionShorten, UserID: "u1", URL: "https://a"},
@@ -32,7 +32,7 @@ func TestFileObserver_AppendsJSONLines(t *testing.T) {
 
 	file, err := os.Open(path)
 	require.NoError(t, err)
-	defer file.Close()
+	defer func() { _ = file.Close() }()
 
 	var got []audit.Event
 	scanner := bufio.NewScanner(file)
@@ -53,7 +53,7 @@ func TestFileObserver_AppendsToExistingFile(t *testing.T) {
 
 	observer, err := audit.NewFileObserver(path)
 	require.NoError(t, err)
-	defer observer.Close()
+	defer func() { _ = observer.Close() }()
 
 	observer.Notify(audit.Event{Timestamp: 1, Action: audit.ActionShorten, URL: "https://x"})
 
@@ -76,7 +76,7 @@ func TestFileObserver_OmitsEmptyUserID(t *testing.T) {
 
 	observer, err := audit.NewFileObserver(path)
 	require.NoError(t, err)
-	defer observer.Close()
+	defer func() { _ = observer.Close() }()
 
 	observer.Notify(audit.Event{Timestamp: 1, Action: audit.ActionFollow, URL: "https://x"})
 

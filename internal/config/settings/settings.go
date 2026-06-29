@@ -1,3 +1,5 @@
+// Package settings loads the application configuration from command-line flags
+// and environment variables into a single Settings value.
 package settings
 
 import (
