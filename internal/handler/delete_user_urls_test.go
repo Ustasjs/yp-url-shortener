@@ -1,15 +1,16 @@
 package handler_test
 
 import (
-	"Ustasjs/yp-url-shortener/internal/handler"
-	"Ustasjs/yp-url-shortener/internal/middleware"
-	"Ustasjs/yp-url-shortener/internal/service/shortener"
 	"bytes"
 	"context"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"testing"
+
+	"Ustasjs/yp-url-shortener/internal/handler"
+	"Ustasjs/yp-url-shortener/internal/middleware"
+	"Ustasjs/yp-url-shortener/internal/service/shortener"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -92,7 +93,7 @@ func TestHandler_DeleteUserURLs(t *testing.T) {
 				overloaded:    tt.overloaded,
 			}
 
-			h := handler.NewHandler(shortenerMock, newMockPingerOk())
+			h := handler.NewHandler(shortenerMock, newMockPingerOk(), newNoopAuditor())
 			rr := httptest.NewRecorder()
 
 			h.DeleteUserURLs(rr, r)

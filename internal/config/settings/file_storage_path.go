@@ -33,7 +33,7 @@ func validateFileStoragePath(filePath string) error {
 	return nil
 }
 
-func initFileStoragePath(settings *Settings) {
+func initFileStoragePath(settings *Settings) error {
 	var fileStoragePathValue FileStoragePath = "./file_storage.json"
 	settings.FileStoragePath = fileStoragePathValue
 
@@ -46,11 +46,11 @@ func initFileStoragePath(settings *Settings) {
 		return nil
 	})
 
-	if envFileStoragePath := os.Getenv("FILE_STORAGE_PATH"); envFileStoragePath != "" {
-		err := validateFileStoragePath(envFileStoragePath)
-		if err != nil {
-			panic(err)
+	if envFileStoragePath, ok := os.LookupEnv("FILE_STORAGE_PATH"); ok {
+		if err := validateFileStoragePath(envFileStoragePath); err != nil {
+			return err
 		}
 		settings.FileStoragePath = FileStoragePath(envFileStoragePath)
 	}
+	return nil
 }

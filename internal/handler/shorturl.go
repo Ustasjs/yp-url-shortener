@@ -1,16 +1,19 @@
 package handler
 
 import (
-	"Ustasjs/yp-url-shortener/internal/logger"
-	"Ustasjs/yp-url-shortener/internal/middleware"
-	"Ustasjs/yp-url-shortener/internal/model"
-	"Ustasjs/yp-url-shortener/internal/repository"
 	"encoding/json"
 	"errors"
 	"io"
 	"net/http"
 	"net/url"
 	"strings"
+	"time"
+
+	"Ustasjs/yp-url-shortener/internal/audit"
+	"Ustasjs/yp-url-shortener/internal/logger"
+	"Ustasjs/yp-url-shortener/internal/middleware"
+	"Ustasjs/yp-url-shortener/internal/model"
+	"Ustasjs/yp-url-shortener/internal/repository"
 )
 
 func writeJSONError(w http.ResponseWriter, message string, status int) {
@@ -19,6 +22,10 @@ func writeJSONError(w http.ResponseWriter, message string, status int) {
 	json.NewEncoder(w).Encode(model.ErrorResponse{Error: message})
 }
 
+// CreateShortURL handles POST / with a plain-text body containing the URL to
+// shorten. On success it responds with 201 Created (or 409 Conflict if the URL
+// was already shortened) and writes the short URL as text/plain. Invalid input
+// yields 400 Bad Request.
 func (h *Handler) CreateShortURL(w http.ResponseWriter, r *http.Request) {
 	if r.Method == http.MethodPost {
 		bodyBytes, err := io.ReadAll(io.LimitReader(r.Body, 1<<20))
@@ -61,12 +68,22 @@ func (h *Handler) CreateShortURL(w http.ResponseWriter, r *http.Request) {
 			logger.Log.Error("internal server error")
 			return
 		}
+
+		h.publishAudit(audit.Event{
+			Timestamp: time.Now().Unix(),
+			Action:    audit.ActionShorten,
+			UserID:    userID,
+			URL:       validURL,
+		})
 		return
 	} else {
 		writeJSONError(w, "Only POST requests are allowed", http.StatusBadRequest)
 	}
 }
 
+// GetShortURLByID handles GET /{id} and redirects to the original URL with 307
+// Temporary Redirect. It responds with 404 Not Found for an unknown id and 410
+// Gone if the URL has been deleted.
 func (h *Handler) GetShortURLByID(w http.ResponseWriter, r *http.Request) {
 	if r.Method == http.MethodGet {
 		ctx := r.Context()
@@ -80,12 +97,25 @@ func (h *Handler) GetShortURLByID(w http.ResponseWriter, r *http.Request) {
 			writeJSONError(w, "url not found", http.StatusNotFound)
 			return
 		}
+
+		userID, _ := middleware.GetUserIDFromContext(ctx)
+		h.publishAudit(audit.Event{
+			Timestamp: time.Now().Unix(),
+			Action:    audit.ActionFollow,
+			UserID:    userID,
+			URL:       originalURL,
+		})
+
 		http.Redirect(w, r, originalURL, http.StatusTemporaryRedirect)
 	} else {
 		writeJSONError(w, "Only GET requests are allowed", http.StatusBadRequest)
 	}
 }
 
+// CreateShortURLJSONApi handles POST /api/shorten with a JSON body
+// (model.CreateShortURLRequest). It responds with 201 Created (or 409 Conflict
+// if the URL already exists) and a model.CreateShortURLResponce JSON body.
+// Invalid input yields 400 Bad Request.
 func (h *Handler) CreateShortURLJSONApi(w http.ResponseWriter, r *http.Request) {
 	if r.Method == http.MethodPost {
 		decoder := json.NewDecoder(r.Body)
@@ -132,10 +162,24 @@ func (h *Handler) CreateShortURLJSONApi(w http.ResponseWriter, r *http.Request) 
 			writeJSONError(w, "error encoding response", http.StatusBadRequest)
 			return
 		}
+
+		h.publishAudit(audit.Event{
+			Timestamp: time.Now().Unix(),
+			Action:    audit.ActionShorten,
+			UserID:    userID,
+			URL:       validURL,
+		})
 		return
 	} else {
 		writeJSONError(w, "Only POST requests are allowed", http.StatusBadRequest)
 	}
+}
+
+func (h *Handler) publishAudit(event audit.Event) {
+	if h.auditor == nil {
+		return
+	}
+	h.auditor.Publish(event)
 }
 
 func parseURL(raw string) (string, error) {

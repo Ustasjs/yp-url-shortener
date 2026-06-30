@@ -1,15 +1,21 @@
 package handler
 
 import (
-	"Ustasjs/yp-url-shortener/internal/logger"
-	"Ustasjs/yp-url-shortener/internal/middleware"
-	"Ustasjs/yp-url-shortener/internal/model"
 	"encoding/json"
 	"io"
 	"net/http"
 	"net/url"
+
+	"Ustasjs/yp-url-shortener/internal/logger"
+	"Ustasjs/yp-url-shortener/internal/middleware"
+	"Ustasjs/yp-url-shortener/internal/model"
 )
 
+// CreateShortURLSByBatch handles POST /api/shorten/batch. It accepts a JSON
+// array of model.BatchShortURLRequestItem, validates every original URL, stores
+// the batch and responds with 201 Created and the matching short URLs. It
+// returns 400 Bad Request for a malformed body or an invalid URL and 500
+// Internal Server Error if the batch cannot be saved.
 func (h *Handler) CreateShortURLSByBatch(w http.ResponseWriter, r *http.Request) {
 	if r.Method == http.MethodPost {
 		decoder := json.NewDecoder(io.LimitReader(r.Body, 1<<20))
