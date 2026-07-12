@@ -7,9 +7,17 @@ import (
 	"go.uber.org/zap"
 )
 
-func initLogLevel(settings *Settings) error {
+func initLogLevel(settings *Settings, cfg *fileConfig) error {
 	var logLevelValue = zap.NewAtomicLevel()
 	settings.LogLevel = logLevelValue
+
+	if cfg != nil && cfg.LogLevel != "" {
+		lvl, err := zap.ParseAtomicLevel(cfg.LogLevel)
+		if err != nil {
+			return err
+		}
+		settings.LogLevel = lvl
+	}
 
 	flag.Func("l", "Input log level", func(flagValue string) error {
 		lvl, err := zap.ParseAtomicLevel(flagValue)

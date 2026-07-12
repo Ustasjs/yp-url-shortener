@@ -33,9 +33,16 @@ func validateFileStoragePath(filePath string) error {
 	return nil
 }
 
-func initFileStoragePath(settings *Settings) error {
+func initFileStoragePath(settings *Settings, cfg *fileConfig) error {
 	var fileStoragePathValue FileStoragePath = "./file_storage.json"
 	settings.FileStoragePath = fileStoragePathValue
+
+	if cfg != nil && cfg.FileStoragePath != "" {
+		if err := validateFileStoragePath(cfg.FileStoragePath); err != nil {
+			return err
+		}
+		settings.FileStoragePath = FileStoragePath(cfg.FileStoragePath)
+	}
 
 	flag.Func("f", "Input file storage path", func(flagValue string) error {
 		err := validateFileStoragePath(flagValue)

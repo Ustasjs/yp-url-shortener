@@ -22,7 +22,14 @@ func validateAuditURL(raw string) error {
 	return nil
 }
 
-func initAuditURL(settings *Settings) error {
+func initAuditURL(settings *Settings, cfg *fileConfig) error {
+	if cfg != nil && cfg.AuditURL != "" {
+		if err := validateAuditURL(cfg.AuditURL); err != nil {
+			return err
+		}
+		settings.AuditURL = AuditURL(cfg.AuditURL)
+	}
+
 	flag.Func("audit-url", "Remote audit sink URL (empty disables HTTP sink)", func(flagValue string) error {
 		if err := validateAuditURL(flagValue); err != nil {
 			return err
