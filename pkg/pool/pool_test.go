@@ -36,6 +36,15 @@ func TestGetAllocatesWhenEmpty(t *testing.T) {
 	}
 }
 
+func TestGetReturnsZeroValueWhenNoFactory(t *testing.T) {
+	p := pool.New[*buffer](nil)
+
+	got := p.Get()
+	if got != nil {
+		t.Errorf("Get returned %v, want zero value (nil)", got)
+	}
+}
+
 func TestPutResetsBeforeReuse(t *testing.T) {
 	p := pool.New(func() *buffer { return &buffer{} })
 
