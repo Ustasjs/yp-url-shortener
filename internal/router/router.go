@@ -77,7 +77,7 @@ func StartServer() {
 
 	r := chi.NewRouter()
 	initMiddleware(r, store)
-	initRoutes(r, settingsMap, db, store, notifier)
+	deleter := initRoutes(r, settingsMap, db, store, notifier)
 
 	srv := &http.Server{
 		Addr:              string(settingsMap.ServerAddress),
@@ -96,7 +96,7 @@ func StartServer() {
 		srv.TLSConfig = tlsConfig
 	}
 
-	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
+	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
 	defer stop()
 
 	serverErr := make(chan error, 1)
@@ -123,6 +123,9 @@ func StartServer() {
 		if err := srv.Shutdown(shutdownCtx); err != nil {
 			logger.Log.Error("Server shutdown failed", zap.Error(err))
 		}
+
+		deleter.Stop()
+		logger.Log.Info("Pending deletions flushed")
 	}
 
 	notifier.Close()
@@ -148,7 +151,7 @@ func initAudit(s *settings.Settings) *audit.Notifier {
 	return notifier
 }
 
-func initRoutes(r *chi.Mux, s *settings.Settings, db *sql.DB, store shortener.Storage, notifier *audit.Notifier) {
+func initRoutes(r *chi.Mux, s *settings.Settings, db *sql.DB, store shortener.Storage, notifier *audit.Notifier) *shortener.URLDeleter {
 	deleter := shortener.NewURLDeleter(store, 100, 5*time.Second)
 	deleter.Start(3)
 
@@ -167,6 +170,8 @@ func initRoutes(r *chi.Mux, s *settings.Settings, db *sql.DB, store shortener.St
 		r.Get("/api/user/urls", h.GetUserURLs)
 		r.Delete("/api/user/urls", h.DeleteUserURLs)
 	})
+
+	return deleter
 }
 
 func initMiddleware(r *chi.Mux, store customMiddleware.UserRepository) {
