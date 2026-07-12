@@ -23,6 +23,7 @@ type Settings struct {
 	DatabaseDSN     DatabaseDSN
 	AuditFile       AuditFile
 	AuditURL        AuditURL
+	EnableHTTPS     bool
 }
 
 func InitSettings() (*Settings, error) {
@@ -47,6 +48,7 @@ func InitSettings() (*Settings, error) {
 	if err := initAuditURL(settings); err != nil {
 		return settings, err
 	}
+	initEnableHTTPS(settings)
 
 	flag.Parse()
 

@@ -88,11 +88,24 @@ func StartServer() {
 		IdleTimeout:       120 * time.Second,
 	}
 
+	if settingsMap.EnableHTTPS {
+		tlsConfig, tlsErr := generateTLSConfig()
+		if tlsErr != nil {
+			panic(tlsErr)
+		}
+		srv.TLSConfig = tlsConfig
+	}
+
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer stop()
 
 	serverErr := make(chan error, 1)
 	go func() {
+		if settingsMap.EnableHTTPS {
+			logger.Log.Info("HTTPS enabled")
+			serverErr <- srv.ListenAndServeTLS("", "")
+			return
+		}
 		serverErr <- srv.ListenAndServe()
 	}()
 
