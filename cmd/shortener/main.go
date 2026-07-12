@@ -15,10 +15,11 @@ import (
 
 // Build information injected at link time via
 // -ldflags "-X main.buildVersion=... -X main.buildDate=... -X main.buildCommit=...".
+// The default "N/A" values are overwritten at compile time when the flags are provided.
 var (
-	buildVersion string
-	buildDate    string
-	buildCommit  string
+	buildVersion = "N/A"
+	buildDate    = "N/A"
+	buildCommit  = "N/A"
 )
 
 func main() {
@@ -40,14 +41,7 @@ func main() {
 }
 
 func printBuildInfo() {
-	fmt.Printf("Build version: %s\n", orNA(buildVersion))
-	fmt.Printf("Build date: %s\n", orNA(buildDate))
-	fmt.Printf("Build commit: %s\n", orNA(buildCommit))
-}
-
-func orNA(value string) string {
-	if value == "" {
-		return "N/A"
-	}
-	return value
+	fmt.Printf("Build version: %s\n", buildVersion)
+	fmt.Printf("Build date: %s\n", buildDate)
+	fmt.Printf("Build commit: %s\n", buildCommit)
 }
