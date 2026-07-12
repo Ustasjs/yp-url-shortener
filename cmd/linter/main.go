@@ -1,4 +1,4 @@
-// Command staticlint is a multichecker assembled from several static
+// Command linter is a multichecker assembled from several static
 // analyzers:
 //
 //   - standard analyzers from golang.org/x/tools/go/analysis/passes;
@@ -15,11 +15,11 @@
 //
 // Usage:
 //
-//	staticlint [flags] package...
+//	linter [flags] package...
 //
 // For example, to run all configured analyzers over the whole module:
 //
-//	go run ./cmd/staticlint ./...
+//	go run ./cmd/linter ./...
 package main
 
 import (
@@ -51,7 +51,7 @@ import (
 	"honnef.co/go/tools/staticcheck"
 	"honnef.co/go/tools/stylecheck"
 
-	"Ustasjs/yp-url-shortener/cmd/staticlint/exitcheck"
+	"Ustasjs/yp-url-shortener/cmd/linter/exitcheck"
 )
 
 // config holds the embedded multichecker configuration.
@@ -83,7 +83,7 @@ func main() {
 func mustParseConfig(data []byte) Config {
 	var cfg Config
 	if err := json.Unmarshal(data, &cfg); err != nil {
-		panic("staticlint: invalid config.json: " + err.Error())
+		panic("linter: invalid config.json: " + err.Error())
 	}
 	return cfg
 }

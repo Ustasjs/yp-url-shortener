@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"net/http"
 	_ "net/http/pprof"
 	"os"
@@ -25,7 +26,7 @@ func main() {
 
 	if pprofAddr := os.Getenv("PPROF_ADDRESS"); pprofAddr != "" {
 		if err := logger.Initialize(zap.NewAtomicLevel()); err != nil {
-			panic(err)
+			log.Fatal(err)
 		}
 
 		go func() {
