@@ -55,7 +55,11 @@ func (h *HTTPObserver) Notify(event Event) {
 		logger.Log.Error("audit: http send failed", zap.Error(err))
 		return
 	}
-	defer resp.Body.Close()
+	defer func() {
+		if err := resp.Body.Close(); err != nil {
+			logger.Log.Error("audit: close response body failed", zap.Error(err))
+		}
+	}()
 
 	if resp.StatusCode >= 400 {
 		logger.Log.Error("audit: http sink returned bad status", zap.Int("status", resp.StatusCode))

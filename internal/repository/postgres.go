@@ -5,7 +5,10 @@ import (
 	"database/sql"
 	"errors"
 
+	"Ustasjs/yp-url-shortener/internal/logger"
 	"Ustasjs/yp-url-shortener/internal/model"
+
+	"go.uber.org/zap"
 )
 
 // PostgresStorage is a Storage backend backed by PostgreSQL.
@@ -71,13 +74,21 @@ func (s *PostgresStorage) SaveListUrls(ctx context.Context, records []model.Shor
 	if err != nil {
 		return err
 	}
-	defer tx.Rollback()
+	defer func() {
+		if rbErr := tx.Rollback(); rbErr != nil && !errors.Is(rbErr, sql.ErrTxDone) {
+			logger.Log.Error("rollback transaction failed", zap.Error(rbErr))
+		}
+	}()
 
 	stmt, err := tx.PrepareContext(ctx, `INSERT INTO short_urls (short_id, original_url, user_id) VALUES ($1, $2, $3) ON CONFLICT (original_url) DO NOTHING`)
 	if err != nil {
 		return err
 	}
-	defer stmt.Close()
+	defer func() {
+		if closeErr := stmt.Close(); closeErr != nil {
+			logger.Log.Error("close prepared statement failed", zap.Error(closeErr))
+		}
+	}()
 
 	for _, rec := range records {
 		_, err = stmt.ExecContext(ctx, rec.ID, rec.URL, userID)
@@ -106,7 +117,11 @@ func (s *PostgresStorage) GetUserURLs(ctx context.Context, userID string) ([]mod
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
+	defer func() {
+		if closeErr := rows.Close(); closeErr != nil {
+			logger.Log.Error("close rows failed", zap.Error(closeErr))
+		}
+	}()
 
 	var urls []model.UserURLItem
 	for rows.Next() {
@@ -135,7 +150,11 @@ func (s *PostgresStorage) DeleteURLsBatch(ctx context.Context, items []model.Del
 	if err != nil {
 		return err
 	}
-	defer tx.Rollback()
+	defer func() {
+		if rbErr := tx.Rollback(); rbErr != nil && !errors.Is(rbErr, sql.ErrTxDone) {
+			logger.Log.Error("rollback transaction failed", zap.Error(rbErr))
+		}
+	}()
 
 	stmt, err := tx.PrepareContext(ctx,
 		`UPDATE short_urls SET is_deleted = true 
@@ -143,7 +162,11 @@ func (s *PostgresStorage) DeleteURLsBatch(ctx context.Context, items []model.Del
 	if err != nil {
 		return err
 	}
-	defer stmt.Close()
+	defer func() {
+		if closeErr := stmt.Close(); closeErr != nil {
+			logger.Log.Error("close prepared statement failed", zap.Error(closeErr))
+		}
+	}()
 
 	for _, item := range items {
 		_, err = stmt.ExecContext(ctx, item.ShortID, item.UserID)
