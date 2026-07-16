@@ -5,7 +5,7 @@ import (
 
 	"golang.org/x/tools/go/analysis/analysistest"
 
-	"Ustasjs/yp-url-shortener/cmd/staticlint/exitcheck"
+	"Ustasjs/yp-url-shortener/cmd/linter/exitcheck"
 )
 
 func TestExitCheck(t *testing.T) {
