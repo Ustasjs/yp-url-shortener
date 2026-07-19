@@ -1,11 +1,16 @@
 package main
 
 import (
+	"context"
+	"errors"
 	"fmt"
 	"log"
 	"net/http"
 	_ "net/http/pprof"
 	"os"
+	"os/signal"
+	"syscall"
+	"time"
 
 	"Ustasjs/yp-url-shortener/internal/logger"
 	"Ustasjs/yp-url-shortener/internal/router"
@@ -37,7 +42,42 @@ func main() {
 		}()
 	}
 
-	router.StartServer()
+	app := router.Setup()
+
+	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
+	defer stop()
+
+	serverErr := make(chan error, 1)
+	go func() {
+		serverErr <- app.ListenAndServe()
+	}()
+
+	select {
+	case err := <-serverErr:
+		if err != nil && !errors.Is(err, http.ErrServerClosed) {
+			logger.Log.Fatal("Server failed", zap.Error(err))
+		}
+	case <-ctx.Done():
+		stop()
+		logger.Log.Info("Shutting down server")
+
+		shutdownCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		defer cancel()
+		if err := app.Server.Shutdown(shutdownCtx); err != nil {
+			logger.Log.Error("Server shutdown failed", zap.Error(err))
+		}
+
+		app.Deleter.Stop()
+		logger.Log.Info("Pending deletions flushed")
+
+		app.Notifier.Close()
+
+		if app.DB != nil {
+			if err := app.DB.Close(); err != nil {
+				logger.Log.Error("close database failed", zap.Error(err))
+			}
+		}
+	}
 }
 
 func printBuildInfo() {
