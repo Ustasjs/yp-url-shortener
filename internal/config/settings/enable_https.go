@@ -3,6 +3,7 @@ package settings
 import (
 	"flag"
 	"os"
+	"strconv"
 )
 
 func initEnableHTTPS(settings *Settings, cfg *fileConfig) {
@@ -15,7 +16,9 @@ func initEnableHTTPS(settings *Settings, cfg *fileConfig) {
 		return nil
 	})
 
-	if _, ok := os.LookupEnv("ENABLE_HTTPS"); ok {
-		settings.EnableHTTPS = true
+	if env, ok := os.LookupEnv("ENABLE_HTTPS"); ok {
+		if enabled, err := strconv.ParseBool(env); err == nil {
+			settings.EnableHTTPS = enabled
+		}
 	}
 }
