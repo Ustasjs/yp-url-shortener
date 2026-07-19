@@ -16,6 +16,7 @@ import (
 	"Ustasjs/yp-url-shortener/internal/router"
 
 	"go.uber.org/zap"
+	"golang.org/x/sync/errgroup"
 )
 
 // Build information injected at link time via
@@ -47,24 +48,27 @@ func main() {
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
 	defer stop()
 
-	serverErr := make(chan error, 1)
-	go func() {
-		serverErr <- app.ListenAndServe()
-	}()
+	g, gCtx := errgroup.WithContext(ctx)
 
-	select {
-	case err := <-serverErr:
-		if err != nil && !errors.Is(err, http.ErrServerClosed) {
-			logger.Log.Fatal("Server failed", zap.Error(err))
+	// Run the server. A non-graceful failure returns an error, which cancels
+	// gCtx and triggers the shutdown goroutine below.
+	g.Go(func() error {
+		if err := app.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
+			return err
 		}
-	case <-ctx.Done():
-		stop()
+		return nil
+	})
+
+	// Wait for a shutdown signal (or a server failure) via gCtx, then tear the
+	// components down in order: the server first, then the dependencies it uses.
+	g.Go(func() error {
+		<-gCtx.Done()
 		logger.Log.Info("Shutting down server")
 
 		shutdownCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 		defer cancel()
 		if err := app.Server.Shutdown(shutdownCtx); err != nil {
-			logger.Log.Error("Server shutdown failed", zap.Error(err))
+			return err
 		}
 
 		app.Deleter.Stop()
@@ -73,10 +77,15 @@ func main() {
 		app.Notifier.Close()
 
 		if app.DB != nil {
-			if err := app.DB.Close(); err != nil {
-				logger.Log.Error("close database failed", zap.Error(err))
-			}
+			return app.DB.Close()
 		}
+		return nil
+	})
+
+	// The root goroutine blocks until every child goroutine has stopped and
+	// logs the first critical error, if any.
+	if err := g.Wait(); err != nil {
+		logger.Log.Fatal("Server terminated with error", zap.Error(err))
 	}
 }
 
