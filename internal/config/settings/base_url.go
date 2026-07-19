@@ -17,9 +17,16 @@ func validateBaseURL(baseURL string) error {
 	return nil
 }
 
-func initBaseURL(settings *Settings) error {
+func initBaseURL(settings *Settings, cfg *fileConfig) error {
 	var baseURLvalue BaseURL = "http://localhost:8080"
 	settings.BaseURL = baseURLvalue
+
+	if cfg != nil && cfg.BaseURL != "" {
+		if err := validateBaseURL(cfg.BaseURL); err != nil {
+			return err
+		}
+		settings.BaseURL = BaseURL(cfg.BaseURL)
+	}
 
 	flag.Func("b", "Input base url", func(flagValue string) error {
 		err := validateBaseURL(flagValue)
