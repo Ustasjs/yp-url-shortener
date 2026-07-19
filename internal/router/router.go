@@ -5,6 +5,7 @@ package router
 
 import (
 	"compress/gzip"
+	"crypto/tls"
 	"database/sql"
 	"net/http"
 	"time"
@@ -95,7 +96,17 @@ func Setup() *App {
 	}
 
 	if settingsMap.EnableHTTPS {
-		tlsConfig, tlsErr := generateTLSConfig()
+		var tlsConfig *tls.Config
+		var tlsErr error
+		if settingsMap.TLSCertFile != "" && settingsMap.TLSKeyFile != "" {
+			logger.Log.Info("Loading TLS certificate from files",
+				zap.String("cert", string(settingsMap.TLSCertFile)),
+				zap.String("key", string(settingsMap.TLSKeyFile)))
+			tlsConfig, tlsErr = tlsConfigFromFiles(string(settingsMap.TLSCertFile), string(settingsMap.TLSKeyFile))
+		} else {
+			logger.Log.Info("Generating in-memory self-signed TLS certificate")
+			tlsConfig, tlsErr = generateTLSConfig()
+		}
 		if tlsErr != nil {
 			panic(tlsErr)
 		}

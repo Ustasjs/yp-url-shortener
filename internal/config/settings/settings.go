@@ -14,6 +14,8 @@ type FileStoragePath string
 type DatabaseDSN string
 type AuditFile string
 type AuditURL string
+type TLSCertFile string
+type TLSKeyFile string
 
 type Settings struct {
 	ServerAddress   ServerAddress
@@ -24,6 +26,8 @@ type Settings struct {
 	AuditFile       AuditFile
 	AuditURL        AuditURL
 	EnableHTTPS     bool
+	TLSCertFile     TLSCertFile
+	TLSKeyFile      TLSKeyFile
 }
 
 func InitSettings() (*Settings, error) {
@@ -58,8 +62,15 @@ func InitSettings() (*Settings, error) {
 		return settings, err
 	}
 	initEnableHTTPS(settings, cfg)
+	initTLSFiles(settings, cfg)
 
 	flag.Parse()
+
+	// TLS file paths need cross-field ("both or neither") validation, so it runs
+	// after flag.Parse once every source has been merged.
+	if err := validateTLSFiles(settings); err != nil {
+		return settings, err
+	}
 
 	return settings, nil
 }

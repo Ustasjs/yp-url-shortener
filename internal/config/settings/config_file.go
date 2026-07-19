@@ -20,6 +20,8 @@ type fileConfig struct {
 	LogLevel        string `json:"log_level"`
 	AuditFile       string `json:"audit_file"`
 	AuditURL        string `json:"audit_url"`
+	TLSCertFile     string `json:"tls_cert_file"`
+	TLSKeyFile      string `json:"tls_key_file"`
 }
 
 // registerConfigFlags declares -c/-config so flag.Parse does not fail on them
