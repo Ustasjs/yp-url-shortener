@@ -166,6 +166,9 @@ func initRoutes(r *chi.Mux, s *settings.Settings, db *sql.DB, store shortener.St
 	r.Post("/api/shorten", h.CreateShortURLJSONApi)
 	r.Post("/api/shorten/batch", h.CreateShortURLSByBatch)
 
+	r.With(customMiddleware.TrustedSubnet(string(s.TrustedSubnet))).
+		Get("/api/internal/stats", h.GetInternalStats)
+
 	r.Group(func(r chi.Router) {
 		r.Use(customMiddleware.RequireAuth())
 		r.Get("/api/user/urls", h.GetUserURLs)

@@ -22,6 +22,7 @@ type fileConfig struct {
 	AuditURL        string `json:"audit_url"`
 	TLSCertFile     string `json:"tls_cert_file"`
 	TLSKeyFile      string `json:"tls_key_file"`
+	TrustedSubnet   string `json:"trusted_subnet"`
 }
 
 // registerConfigFlags declares -c/-config so flag.Parse does not fail on them

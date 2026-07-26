@@ -12,7 +12,7 @@ import (
 var relevantEnv = []string{
 	"SERVER_ADDRESS", "BASE_URL", "DATABASE_DSN", "FILE_STORAGE_PATH",
 	"LOG_LEVEL", "ENABLE_HTTPS", "AUDIT_FILE", "AUDIT_URL",
-	"TLS_CERT_FILE", "TLS_KEY_FILE", "CONFIG",
+	"TLS_CERT_FILE", "TLS_KEY_FILE", "CONFIG", "TRUSTED_SUBNET",
 }
 
 // setupSettings gives each case a fresh flag set and argv (InitSettings

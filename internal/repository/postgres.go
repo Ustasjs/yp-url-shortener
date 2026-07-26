@@ -139,6 +139,17 @@ func (s *PostgresStorage) GetUserURLs(ctx context.Context, userID string) ([]mod
 	return urls, nil
 }
 
+// GetStats returns the total number of stored short URLs and registered users.
+func (s *PostgresStorage) GetStats(ctx context.Context) (model.StatsResponse, error) {
+	var stats model.StatsResponse
+	if err := s.db.QueryRowContext(ctx,
+		`SELECT (SELECT COUNT(*) FROM short_urls), (SELECT COUNT(*) FROM users)`,
+	).Scan(&stats.URLs, &stats.Users); err != nil {
+		return model.StatsResponse{}, err
+	}
+	return stats, nil
+}
+
 // DeleteURLsBatch soft-deletes the given items, marking each matching row as
 // deleted within a single transaction.
 func (s *PostgresStorage) DeleteURLsBatch(ctx context.Context, items []model.DeleteItem) error {

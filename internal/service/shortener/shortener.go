@@ -25,6 +25,8 @@ type Storage interface {
 	GetUserURLs(ctx context.Context, userID string) ([]model.UserURLItem, error)
 	// DeleteURLsBatch marks the given items as deleted.
 	DeleteURLsBatch(ctx context.Context, items []model.DeleteItem) error
+	// GetStats returns the service-wide number of shortened URLs and users.
+	GetStats(ctx context.Context) (model.StatsResponse, error)
 }
 
 // Shortener implements the URL shortening business logic on top of a Storage
@@ -101,6 +103,11 @@ func (s *Shortener) GetUserURLs(ctx context.Context, userID string) ([]model.Use
 	}
 
 	return items, nil
+}
+
+// GetStats returns the service-wide number of shortened URLs and users.
+func (s *Shortener) GetStats(ctx context.Context) (model.StatsResponse, error) {
+	return s.repo.GetStats(ctx)
 }
 
 // DeleteURLsAsync schedules deletion of the given short IDs owned by userID. It

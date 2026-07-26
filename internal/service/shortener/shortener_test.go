@@ -23,6 +23,9 @@ func (noopStorage) GetUserURLs(context.Context, string) ([]model.UserURLItem, er
 	return nil, nil
 }
 func (noopStorage) DeleteURLsBatch(context.Context, []model.DeleteItem) error { return nil }
+func (noopStorage) GetStats(context.Context) (model.StatsResponse, error) {
+	return model.StatsResponse{}, nil
+}
 
 func TestCreateShortURLFormat(t *testing.T) {
 	// Trailing slash in baseURL must not produce a double slash.

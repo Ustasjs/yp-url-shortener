@@ -64,6 +64,10 @@ func (m *mockShortener) DeleteURLsAsync(userID string, shortIDs []string) error 
 	return nil
 }
 
+func (m *mockShortener) GetStats(_ctx context.Context) (model.StatsResponse, error) {
+	return model.StatsResponse{URLs: len(m.urls), Users: 1}, nil
+}
+
 type mockPingerOk struct{}
 
 func (p mockPingerOk) PingContext(_ctx context.Context) error {

@@ -146,6 +146,17 @@ func (s *MemStorage) GetUserURLs(_ctx context.Context, userID string) ([]model.U
 	return urls, nil
 }
 
+// GetStats returns the number of stored short URLs and registered users.
+func (s *MemStorage) GetStats(_ctx context.Context) (model.StatsResponse, error) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
+	return model.StatsResponse{
+		URLs:  len(s.storage),
+		Users: len(s.users),
+	}, nil
+}
+
 // DeleteURLsBatch marks the given items as deleted when owned by the requesting
 // user and persists the change.
 func (s *MemStorage) DeleteURLsBatch(_ctx context.Context, items []model.DeleteItem) error {

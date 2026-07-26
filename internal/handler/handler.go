@@ -24,6 +24,8 @@ type Shortener interface {
 	// DeleteURLsAsync schedules the asynchronous deletion of the given short IDs
 	// owned by userID.
 	DeleteURLsAsync(userID string, shortIDs []string) error
+	// GetStats returns the service-wide number of shortened URLs and users.
+	GetStats(ctx context.Context) (model.StatsResponse, error)
 }
 
 // Pinger reports whether the underlying storage (typically the database) is

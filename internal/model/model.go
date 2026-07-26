@@ -48,6 +48,13 @@ type UserURLItem struct {
 	OriginalURL string `json:"original_url"`
 }
 
+// StatsResponse is the JSON response of GET /api/internal/stats and reports
+// the service-wide number of shortened URLs and users.
+type StatsResponse struct {
+	URLs  int `json:"urls"`
+	Users int `json:"users"`
+}
+
 // DeleteItem identifies a single short URL to delete on behalf of its owner.
 type DeleteItem struct {
 	UserID  string
