@@ -1,15 +1,13 @@
 // Package router wires together configuration, logging, storage, services,
-// middleware and HTTP routes, and runs the server.
+// middleware and HTTP routes, and builds the HTTP server. The caller owns
+// the server lifecycle: starting it and shutting down the dependencies.
 package router
 
 import (
 	"compress/gzip"
-	"context"
+	"crypto/tls"
 	"database/sql"
-	"errors"
 	"net/http"
-	"os/signal"
-	"syscall"
 	"time"
 
 	"Ustasjs/yp-url-shortener/internal/audit"
@@ -27,10 +25,24 @@ import (
 	"go.uber.org/zap"
 )
 
-// StartServer loads configuration, initializes logging, storage and the audit
-// subsystem, registers all routes and middleware, and starts the HTTP server.
-// It blocks until the server stops and panics on a fatal startup error.
-func StartServer() {
+// App bundles the initialized HTTP server together with the dependencies whose
+// lifecycle must be shut down by the caller after the server stops. Shutting
+// the components down in the right order — the server first, then the
+// dependencies it uses — is the caller's responsibility.
+type App struct {
+	Server   *http.Server
+	Deleter  *shortener.URLDeleter
+	Notifier *audit.Notifier
+	DB       *sql.DB
+
+	useHTTPS bool
+}
+
+// Setup loads configuration, initializes logging, storage and the audit
+// subsystem, and registers all routes and middleware. It returns an App
+// holding the HTTP server and the dependencies whose lifecycle the caller is
+// responsible for shutting down. It panics on a fatal startup error.
+func Setup() *App {
 	settingsMap, settingsErr := settings.InitSettings()
 
 	loggerErr := logger.Initialize(settingsMap.LogLevel)
@@ -52,11 +64,6 @@ func StartServer() {
 		if dbErr != nil {
 			panic(dbErr)
 		}
-		defer func() {
-			if err := db.Close(); err != nil {
-				logger.Log.Error("close database failed", zap.Error(err))
-			}
-		}()
 
 		migrationsErr := migrations.RunMigrations(db)
 		if migrationsErr != nil {
@@ -77,7 +84,7 @@ func StartServer() {
 
 	r := chi.NewRouter()
 	initMiddleware(r, store)
-	initRoutes(r, settingsMap, db, store, notifier)
+	deleter := initRoutes(r, settingsMap, db, store, notifier)
 
 	srv := &http.Server{
 		Addr:              string(settingsMap.ServerAddress),
@@ -88,31 +95,41 @@ func StartServer() {
 		IdleTimeout:       120 * time.Second,
 	}
 
-	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
-	defer stop()
-
-	serverErr := make(chan error, 1)
-	go func() {
-		serverErr <- srv.ListenAndServe()
-	}()
-
-	select {
-	case err := <-serverErr:
-		if err != nil && !errors.Is(err, http.ErrServerClosed) {
-			panic(err)
+	if settingsMap.EnableHTTPS {
+		var tlsConfig *tls.Config
+		var tlsErr error
+		if settingsMap.TLSCertFile != "" && settingsMap.TLSKeyFile != "" {
+			logger.Log.Info("Loading TLS certificate from files",
+				zap.String("cert", string(settingsMap.TLSCertFile)),
+				zap.String("key", string(settingsMap.TLSKeyFile)))
+			tlsConfig, tlsErr = tlsConfigFromFiles(string(settingsMap.TLSCertFile), string(settingsMap.TLSKeyFile))
+		} else {
+			logger.Log.Info("Generating in-memory self-signed TLS certificate")
+			tlsConfig, tlsErr = generateTLSConfig()
 		}
-	case <-ctx.Done():
-		stop()
-		logger.Log.Info("Shutting down server")
-
-		shutdownCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-		defer cancel()
-		if err := srv.Shutdown(shutdownCtx); err != nil {
-			logger.Log.Error("Server shutdown failed", zap.Error(err))
+		if tlsErr != nil {
+			panic(tlsErr)
 		}
+		srv.TLSConfig = tlsConfig
 	}
 
-	notifier.Close()
+	return &App{
+		Server:   srv,
+		Deleter:  deleter,
+		Notifier: notifier,
+		DB:       db,
+		useHTTPS: settingsMap.EnableHTTPS,
+	}
+}
+
+// ListenAndServe starts the HTTP (or HTTPS) server and blocks until it stops.
+// It returns http.ErrServerClosed after a graceful Shutdown.
+func (a *App) ListenAndServe() error {
+	if a.useHTTPS {
+		logger.Log.Info("HTTPS enabled")
+		return a.Server.ListenAndServeTLS("", "")
+	}
+	return a.Server.ListenAndServe()
 }
 
 func initAudit(s *settings.Settings) *audit.Notifier {
@@ -135,7 +152,7 @@ func initAudit(s *settings.Settings) *audit.Notifier {
 	return notifier
 }
 
-func initRoutes(r *chi.Mux, s *settings.Settings, db *sql.DB, store shortener.Storage, notifier *audit.Notifier) {
+func initRoutes(r *chi.Mux, s *settings.Settings, db *sql.DB, store shortener.Storage, notifier *audit.Notifier) *shortener.URLDeleter {
 	deleter := shortener.NewURLDeleter(store, 100, 5*time.Second)
 	deleter.Start(3)
 
@@ -154,6 +171,8 @@ func initRoutes(r *chi.Mux, s *settings.Settings, db *sql.DB, store shortener.St
 		r.Get("/api/user/urls", h.GetUserURLs)
 		r.Delete("/api/user/urls", h.DeleteUserURLs)
 	})
+
+	return deleter
 }
 
 func initMiddleware(r *chi.Mux, store customMiddleware.UserRepository) {

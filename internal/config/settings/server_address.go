@@ -22,9 +22,16 @@ func validateServerAddress(serverAddress string) error {
 	return nil
 }
 
-func initServerAddress(settings *Settings) error {
+func initServerAddress(settings *Settings, cfg *fileConfig) error {
 	var serverAddressValue ServerAddress = "localhost:8080"
 	settings.ServerAddress = serverAddressValue
+
+	if cfg != nil && cfg.ServerAddress != "" {
+		if err := validateServerAddress(cfg.ServerAddress); err != nil {
+			return err
+		}
+		settings.ServerAddress = ServerAddress(cfg.ServerAddress)
+	}
 
 	flag.Func("a", "Input server address", func(flagValue string) error {
 		err := validateServerAddress(flagValue)

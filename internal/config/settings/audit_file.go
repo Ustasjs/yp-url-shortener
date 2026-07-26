@@ -33,7 +33,14 @@ func validateAuditFile(filePath string) error {
 	return nil
 }
 
-func initAuditFile(settings *Settings) error {
+func initAuditFile(settings *Settings, cfg *fileConfig) error {
+	if cfg != nil && cfg.AuditFile != "" {
+		if err := validateAuditFile(cfg.AuditFile); err != nil {
+			return err
+		}
+		settings.AuditFile = AuditFile(cfg.AuditFile)
+	}
+
 	flag.Func("audit-file", "Path to audit log file (empty disables file sink)", func(flagValue string) error {
 		if err := validateAuditFile(flagValue); err != nil {
 			return err
