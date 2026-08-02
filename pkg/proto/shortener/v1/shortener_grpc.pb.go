@@ -31,9 +31,9 @@ const (
 //
 // ShortenerService is the gRPC version of the HTTP API.
 //
-// Auth: put a JWT into the "authorization" metadata header. A bare token and
-// "Bearer <token>" both work. With no header the server makes a new user and
-// sends the token back in the "authorization" response header.
+// Auth: put a bare JWT into the "authorization" metadata header.
+// With no header the server makes a new user and sends the
+// token back in the "authorization" response header.
 type ShortenerServiceClient interface {
 	// ShortenURL saves url and returns the short URL. Same as POST /api/shorten.
 	//
@@ -97,9 +97,9 @@ func (c *shortenerServiceClient) ListUserURLs(ctx context.Context, in *emptypb.E
 //
 // ShortenerService is the gRPC version of the HTTP API.
 //
-// Auth: put a JWT into the "authorization" metadata header. A bare token and
-// "Bearer <token>" both work. With no header the server makes a new user and
-// sends the token back in the "authorization" response header.
+// Auth: put a bare JWT into the "authorization" metadata header.
+// With no header the server makes a new user and sends the
+// token back in the "authorization" response header.
 type ShortenerServiceServer interface {
 	// ShortenURL saves url and returns the short URL. Same as POST /api/shorten.
 	//
