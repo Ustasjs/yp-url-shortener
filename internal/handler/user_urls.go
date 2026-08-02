@@ -21,7 +21,7 @@ func (h *Handler) GetUserURLs(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	urls, err := h.shortener.GetUserURLs(r.Context(), userID)
+	urls, err := h.urls.ListUserURLs(r.Context(), userID)
 	if err != nil {
 		http.Error(w, "Internal server error", http.StatusInternalServerError)
 		return

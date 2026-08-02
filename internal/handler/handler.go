@@ -6,6 +6,7 @@ import (
 
 	"Ustasjs/yp-url-shortener/internal/audit"
 	"Ustasjs/yp-url-shortener/internal/model"
+	"Ustasjs/yp-url-shortener/internal/service/urlservice"
 )
 
 // Shortener is the business-logic dependency used by the HTTP handlers to create
@@ -42,8 +43,8 @@ type AuditPublisher interface {
 // Handler holds the dependencies shared by all HTTP handlers of the service.
 type Handler struct {
 	shortener Shortener
+	urls      *urlservice.Service
 	pinger    Pinger
-	auditor   AuditPublisher
 }
 
 // NewHandler returns a Handler that uses the given shortener service, pinger and
@@ -52,5 +53,9 @@ type Handler struct {
 // The pinger and auditor dependencies may be nil: GetDBPing then reports that
 // the database is not configured, and audit events are silently dropped.
 func NewHandler(shortener Shortener, pinger Pinger, auditor AuditPublisher) *Handler {
-	return &Handler{shortener: shortener, pinger: pinger, auditor: auditor}
+	return &Handler{
+		shortener: shortener,
+		urls:      urlservice.New(shortener, auditor),
+		pinger:    pinger,
+	}
 }

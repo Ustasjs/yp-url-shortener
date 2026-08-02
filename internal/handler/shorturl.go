@@ -5,15 +5,13 @@ import (
 	"errors"
 	"io"
 	"net/http"
-	"net/url"
 	"strings"
-	"time"
 
-	"Ustasjs/yp-url-shortener/internal/audit"
 	"Ustasjs/yp-url-shortener/internal/logger"
 	"Ustasjs/yp-url-shortener/internal/middleware"
 	"Ustasjs/yp-url-shortener/internal/model"
 	"Ustasjs/yp-url-shortener/internal/repository"
+	"Ustasjs/yp-url-shortener/internal/service/urlservice"
 
 	"go.uber.org/zap"
 )
@@ -42,43 +40,29 @@ func (h *Handler) CreateShortURL(w http.ResponseWriter, r *http.Request) {
 			writeJSONError(w, "url is required", http.StatusBadRequest)
 			return
 		}
-		validURL, err := parseURL(body)
-		if err != nil {
-			writeJSONError(w, "invalid url", http.StatusBadRequest)
-			return
-		}
-
 		ctx := r.Context()
 		userID, _ := middleware.GetUserIDFromContext(ctx)
-		shortURL, err := h.shortener.CreateShortURL(ctx, validURL, userID)
-		var status int
-		hasConflict := errors.Is(err, repository.ErrConflict)
+		shortURL, err := h.urls.Shorten(ctx, body, userID)
 
-		if err != nil && !hasConflict {
+		var status int
+		switch {
+		case errors.Is(err, urlservice.ErrInvalidURL):
+			writeJSONError(w, "invalid url", http.StatusBadRequest)
+			return
+		case errors.Is(err, repository.ErrConflict):
+			status = http.StatusConflict
+		case err != nil:
 			writeJSONError(w, "bad request", http.StatusBadRequest)
 			return
-		}
-
-		if hasConflict {
-			status = http.StatusConflict
-		} else {
+		default:
 			status = http.StatusCreated
 		}
 
 		w.Header().Set("Content-Type", "text/plain")
 		w.WriteHeader(status)
-		_, err = w.Write([]byte(shortURL))
-		if err != nil {
+		if _, err := w.Write([]byte(shortURL)); err != nil {
 			logger.Log.Error("internal server error")
-			return
 		}
-
-		h.publishAudit(audit.Event{
-			Timestamp: time.Now().Unix(),
-			Action:    audit.ActionShorten,
-			UserID:    userID,
-			URL:       validURL,
-		})
 		return
 	} else {
 		writeJSONError(w, "Only POST requests are allowed", http.StatusBadRequest)
@@ -92,7 +76,9 @@ func (h *Handler) GetShortURLByID(w http.ResponseWriter, r *http.Request) {
 	if r.Method == http.MethodGet {
 		ctx := r.Context()
 		id := r.PathValue("id")
-		originalURL, err := h.shortener.GetOriginalURL(ctx, id)
+		userID, _ := middleware.GetUserIDFromContext(ctx)
+
+		originalURL, err := h.urls.Expand(ctx, id, userID)
 		if errors.Is(err, repository.ErrDeleted) {
 			http.Error(w, "Gone", http.StatusGone)
 			return
@@ -101,14 +87,6 @@ func (h *Handler) GetShortURLByID(w http.ResponseWriter, r *http.Request) {
 			writeJSONError(w, "url not found", http.StatusNotFound)
 			return
 		}
-
-		userID, _ := middleware.GetUserIDFromContext(ctx)
-		h.publishAudit(audit.Event{
-			Timestamp: time.Now().Unix(),
-			Action:    audit.ActionFollow,
-			UserID:    userID,
-			URL:       originalURL,
-		})
 
 		http.Redirect(w, r, originalURL, http.StatusTemporaryRedirect)
 	} else {
@@ -131,26 +109,21 @@ func (h *Handler) CreateShortURLJSONApi(w http.ResponseWriter, r *http.Request) 
 			return
 		}
 
-		validURL, err := parseURL(request.URL)
-		if err != nil {
-			writeJSONError(w, "invalid url", http.StatusBadRequest)
-			return
-		}
-
 		ctx := r.Context()
 		userID, _ := middleware.GetUserIDFromContext(ctx)
-		shortURL, err := h.shortener.CreateShortURL(ctx, validURL, userID)
-		var status int
-		hasConflict := errors.Is(err, repository.ErrConflict)
+		shortURL, err := h.urls.Shorten(ctx, request.URL, userID)
 
-		if err != nil && !hasConflict {
+		var status int
+		switch {
+		case errors.Is(err, urlservice.ErrInvalidURL):
+			writeJSONError(w, "invalid url", http.StatusBadRequest)
+			return
+		case errors.Is(err, repository.ErrConflict):
+			status = http.StatusConflict
+		case err != nil:
 			writeJSONError(w, "bad request", http.StatusBadRequest)
 			return
-		}
-
-		if hasConflict {
-			status = http.StatusConflict
-		} else {
+		default:
 			status = http.StatusCreated
 		}
 
@@ -166,30 +139,8 @@ func (h *Handler) CreateShortURLJSONApi(w http.ResponseWriter, r *http.Request) 
 			writeJSONError(w, "error encoding response", http.StatusBadRequest)
 			return
 		}
-
-		h.publishAudit(audit.Event{
-			Timestamp: time.Now().Unix(),
-			Action:    audit.ActionShorten,
-			UserID:    userID,
-			URL:       validURL,
-		})
 		return
 	} else {
 		writeJSONError(w, "Only POST requests are allowed", http.StatusBadRequest)
 	}
-}
-
-func (h *Handler) publishAudit(event audit.Event) {
-	if h.auditor == nil {
-		return
-	}
-	h.auditor.Publish(event)
-}
-
-func parseURL(raw string) (string, error) {
-	parsed, err := url.ParseRequestURI(raw)
-	if err != nil || parsed.Scheme == "" || parsed.Host == "" {
-		return "", errors.New("invalid url")
-	}
-	return parsed.String(), nil
 }
