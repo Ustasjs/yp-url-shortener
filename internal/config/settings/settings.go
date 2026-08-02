@@ -9,6 +9,7 @@ import (
 )
 
 type ServerAddress string
+type GRPCAddress string
 type BaseURL string
 type FileStoragePath string
 type DatabaseDSN string
@@ -20,6 +21,7 @@ type TrustedSubnet string
 
 type Settings struct {
 	ServerAddress   ServerAddress
+	GRPCAddress     GRPCAddress
 	BaseURL         BaseURL
 	LogLevel        zap.AtomicLevel
 	FileStoragePath FileStoragePath
@@ -48,6 +50,9 @@ func InitSettings() (*Settings, error) {
 		return settings, err
 	}
 	if err := initServerAddress(settings, cfg); err != nil {
+		return settings, err
+	}
+	if err := initGRPCAddress(settings, cfg); err != nil {
 		return settings, err
 	}
 	if err := initBaseURL(settings, cfg); err != nil {

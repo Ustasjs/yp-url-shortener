@@ -13,6 +13,7 @@ import (
 // the lowest-priority configuration source (above hardcoded defaults only).
 type fileConfig struct {
 	ServerAddress   string `json:"server_address"`
+	GRPCAddress     string `json:"grpc_address"`
 	BaseURL         string `json:"base_url"`
 	FileStoragePath string `json:"file_storage_path"`
 	DatabaseDSN     string `json:"database_dsn"`
