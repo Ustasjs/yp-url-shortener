@@ -1,0 +1,58 @@
+syntax = "proto3";
+
+package shortener.v1;
+
+import "google/protobuf/empty.proto";
+
+option go_package = "Ustasjs/yp-url-shortener/pkg/proto/shortener/v1;shortenerv1";
+
+// ShortenerService is the gRPC face of the HTTP API.
+//
+// Auth: a JWT in the "authorization" metadata header, bare or "Bearer <token>".
+// No header means a new user. The token comes back in the "authorization"
+// response header.
+service ShortenerService {
+  // ShortenURL stores url and returns its short URL. Mirrors POST /api/shorten.
+  //
+  // INVALID_ARGUMENT: url is not absolute.
+  // ALREADY_EXISTS: url was already shortened. HTTP answers 409 and still
+  // returns the short URL. A gRPC handler cannot return a message with an
+  // error, so the short URL rides in the "x-short-url" response header and in
+  // the status details as a URLShortenResponse.
+  rpc ShortenURL(URLShortenRequest) returns (URLShortenResponse);
+
+  // ExpandURL returns the original URL stored under id. Mirrors GET /{id}.
+  //
+  // NOT_FOUND: unknown id (HTTP 404).
+  // FAILED_PRECONDITION: the URL was deleted (HTTP 410).
+  rpc ExpandURL(URLExpandRequest) returns (URLExpandResponse);
+
+  // ListUserURLs returns every URL owned by the caller. Mirrors
+  // GET /api/user/urls. No URLs means an empty list and OK, not an error.
+  rpc ListUserURLs(google.protobuf.Empty) returns (UserURLsResponse);
+}
+
+message URLShortenRequest {
+  string url = 1;
+}
+
+message URLShortenResponse {
+  string result = 1;
+}
+
+message URLExpandRequest {
+  string id = 1;
+}
+
+message URLExpandResponse {
+  string result = 1;
+}
+
+message URLData {
+  string short_url = 1;
+  string original_url = 2;
+}
+
+message UserURLsResponse {
+  repeated URLData url = 1;
+}
