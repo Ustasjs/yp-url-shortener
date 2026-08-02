@@ -1,4 +1,4 @@
-// Package shortenerv1 contains the generated Protocol Buffers contract of the
-// ShortenerService gRPC API. The source of truth is
-// api/proto/shortener/v1/shortener.proto; regenerate with `make proto`.
+// Package shortenerv1 holds the generated Protocol Buffers contract of the
+// ShortenerService gRPC API. Do not edit it. Change
+// api/proto/shortener/v1/shortener.proto and run `make proto`.
 package shortenerv1

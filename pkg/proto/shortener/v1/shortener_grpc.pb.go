@@ -29,27 +29,27 @@ const (
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 //
-// ShortenerService is the gRPC face of the HTTP API.
+// ShortenerService is the gRPC version of the HTTP API.
 //
-// Auth: a JWT in the "authorization" metadata header, bare or "Bearer <token>".
-// No header means a new user. The token comes back in the "authorization"
-// response header.
+// Auth: put a JWT into the "authorization" metadata header. A bare token and
+// "Bearer <token>" both work. With no header the server makes a new user and
+// sends the token back in the "authorization" response header.
 type ShortenerServiceClient interface {
-	// ShortenURL stores url and returns its short URL. Mirrors POST /api/shorten.
+	// ShortenURL saves url and returns the short URL. Same as POST /api/shorten.
 	//
 	// INVALID_ARGUMENT: url is not absolute.
-	// ALREADY_EXISTS: url was already shortened. HTTP answers 409 and still
-	// returns the short URL. A gRPC handler cannot return a message with an
-	// error, so the short URL rides in the "x-short-url" response header and in
-	// the status details as a URLShortenResponse.
+	// ALREADY_EXISTS: url was shortened before. HTTP returns 409 and the short
+	// URL in the body. gRPC cannot send a message and an error together, so the
+	// short URL goes into the "x-short-url" response header and into the status
+	// details as a URLShortenResponse.
 	ShortenURL(ctx context.Context, in *URLShortenRequest, opts ...grpc.CallOption) (*URLShortenResponse, error)
-	// ExpandURL returns the original URL stored under id. Mirrors GET /{id}.
+	// ExpandURL returns the original URL saved under id. Same as GET /{id}.
 	//
-	// NOT_FOUND: unknown id (HTTP 404).
+	// NOT_FOUND: no such id (HTTP 404).
 	// FAILED_PRECONDITION: the URL was deleted (HTTP 410).
 	ExpandURL(ctx context.Context, in *URLExpandRequest, opts ...grpc.CallOption) (*URLExpandResponse, error)
-	// ListUserURLs returns every URL owned by the caller. Mirrors
-	// GET /api/user/urls. No URLs means an empty list and OK, not an error.
+	// ListUserURLs returns all URLs of the caller. Same as GET /api/user/urls.
+	// No URLs means an empty list and OK, not an error.
 	ListUserURLs(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*UserURLsResponse, error)
 }
 
@@ -95,27 +95,27 @@ func (c *shortenerServiceClient) ListUserURLs(ctx context.Context, in *emptypb.E
 // All implementations must embed UnimplementedShortenerServiceServer
 // for forward compatibility.
 //
-// ShortenerService is the gRPC face of the HTTP API.
+// ShortenerService is the gRPC version of the HTTP API.
 //
-// Auth: a JWT in the "authorization" metadata header, bare or "Bearer <token>".
-// No header means a new user. The token comes back in the "authorization"
-// response header.
+// Auth: put a JWT into the "authorization" metadata header. A bare token and
+// "Bearer <token>" both work. With no header the server makes a new user and
+// sends the token back in the "authorization" response header.
 type ShortenerServiceServer interface {
-	// ShortenURL stores url and returns its short URL. Mirrors POST /api/shorten.
+	// ShortenURL saves url and returns the short URL. Same as POST /api/shorten.
 	//
 	// INVALID_ARGUMENT: url is not absolute.
-	// ALREADY_EXISTS: url was already shortened. HTTP answers 409 and still
-	// returns the short URL. A gRPC handler cannot return a message with an
-	// error, so the short URL rides in the "x-short-url" response header and in
-	// the status details as a URLShortenResponse.
+	// ALREADY_EXISTS: url was shortened before. HTTP returns 409 and the short
+	// URL in the body. gRPC cannot send a message and an error together, so the
+	// short URL goes into the "x-short-url" response header and into the status
+	// details as a URLShortenResponse.
 	ShortenURL(context.Context, *URLShortenRequest) (*URLShortenResponse, error)
-	// ExpandURL returns the original URL stored under id. Mirrors GET /{id}.
+	// ExpandURL returns the original URL saved under id. Same as GET /{id}.
 	//
-	// NOT_FOUND: unknown id (HTTP 404).
+	// NOT_FOUND: no such id (HTTP 404).
 	// FAILED_PRECONDITION: the URL was deleted (HTTP 410).
 	ExpandURL(context.Context, *URLExpandRequest) (*URLExpandResponse, error)
-	// ListUserURLs returns every URL owned by the caller. Mirrors
-	// GET /api/user/urls. No URLs means an empty list and OK, not an error.
+	// ListUserURLs returns all URLs of the caller. Same as GET /api/user/urls.
+	// No URLs means an empty list and OK, not an error.
 	ListUserURLs(context.Context, *emptypb.Empty) (*UserURLsResponse, error)
 	mustEmbedUnimplementedShortenerServiceServer()
 }
