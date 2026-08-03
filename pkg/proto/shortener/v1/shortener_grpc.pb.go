@@ -40,8 +40,7 @@ type ShortenerServiceClient interface {
 	// INVALID_ARGUMENT: url is not absolute.
 	// ALREADY_EXISTS: url was shortened before. HTTP returns 409 and the short
 	// URL in the body. gRPC cannot send a message and an error together, so the
-	// short URL goes into the "x-short-url" response header and into the status
-	// details as a URLShortenResponse.
+	// short URL goes into the "x-short-url" response header.
 	ShortenURL(ctx context.Context, in *URLShortenRequest, opts ...grpc.CallOption) (*URLShortenResponse, error)
 	// ExpandURL returns the original URL saved under id. Same as GET /{id}.
 	//
@@ -106,8 +105,7 @@ type ShortenerServiceServer interface {
 	// INVALID_ARGUMENT: url is not absolute.
 	// ALREADY_EXISTS: url was shortened before. HTTP returns 409 and the short
 	// URL in the body. gRPC cannot send a message and an error together, so the
-	// short URL goes into the "x-short-url" response header and into the status
-	// details as a URLShortenResponse.
+	// short URL goes into the "x-short-url" response header.
 	ShortenURL(context.Context, *URLShortenRequest) (*URLShortenResponse, error)
 	// ExpandURL returns the original URL saved under id. Same as GET /{id}.
 	//
