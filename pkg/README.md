@@ -8,4 +8,4 @@
 - общие модели данных
 - клиентские SDK
 
-Protocol Buffers (Protobuf) будет изучаться дальше по курсу.
+В `proto/shortener/v1` лежит сгенерированный контракт gRPC-сервиса. Руками его править не нужно: правится `api/proto/shortener/v1/shortener.proto`, затем выполняется `make proto`.
