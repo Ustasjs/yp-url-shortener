@@ -14,6 +14,11 @@ import (
 	"google.golang.org/grpc/credentials"
 )
 
+// ErrServerStopped is what ListenAndServe returns after Stop, the gRPC twin of
+// http.ErrServerClosed. It is re-exported so the caller does not have to import
+// grpc just to recognize a deliberate shutdown.
+var ErrServerStopped = grpc.ErrServerStopped
+
 // URLService is the business logic behind the RPC handlers.
 // *urlservice.Service implements it.
 type URLService interface {

@@ -12,6 +12,7 @@ import (
 	"syscall"
 	"time"
 
+	"Ustasjs/yp-url-shortener/internal/grpcserver"
 	"Ustasjs/yp-url-shortener/internal/logger"
 	"Ustasjs/yp-url-shortener/internal/router"
 
@@ -50,7 +51,7 @@ func main() {
 
 	g, gCtx := errgroup.WithContext(ctx)
 
-	// Run the server. A non-graceful failure returns an error, which cancels
+	// Run the servers. A non-graceful failure returns an error, which cancels
 	// gCtx and triggers the shutdown goroutine below.
 	g.Go(func() error {
 		if err := app.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
@@ -59,15 +60,26 @@ func main() {
 		return nil
 	})
 
+	g.Go(func() error {
+		if err := app.GRPCServer.ListenAndServe(); err != nil && !errors.Is(err, grpcserver.ErrServerStopped) {
+			return err
+		}
+		return nil
+	})
+
 	// Wait for a shutdown signal (or a server failure) via gCtx, then tear the
-	// components down in order: the server first, then the dependencies it uses.
+	// components down in order: the servers first, then the dependencies they
+	// use.
 	g.Go(func() error {
 		<-gCtx.Done()
-		logger.Log.Info("Shutting down server")
+		logger.Log.Info("Shutting down servers")
 
 		shutdownCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 		defer cancel()
-		if err := app.Server.Shutdown(shutdownCtx); err != nil {
+
+		httpErr := app.Server.Shutdown(shutdownCtx)
+		grpcErr := app.GRPCServer.Shutdown(shutdownCtx)
+		if err := errors.Join(httpErr, grpcErr); err != nil {
 			return err
 		}
 
