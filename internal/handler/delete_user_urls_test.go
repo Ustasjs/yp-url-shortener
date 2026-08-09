@@ -15,24 +15,12 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-type mockShortenerOverloaded struct {
-	*mockShortener
-	overloaded bool
-}
-
-func (m *mockShortenerOverloaded) DeleteURLsAsync(userID string, shortIDs []string) error {
-	if m.overloaded {
-		return shortener.ErrServiceOverloaded
-	}
-	return nil
-}
-
 func TestHandler_DeleteUserURLs(t *testing.T) {
 	tests := []struct {
 		name           string
 		setupContext   func() context.Context
 		body           interface{}
-		overloaded     bool
+		setupShortener func(*handler.MockShortener)
 		expectedStatus int
 	}{
 		{
@@ -40,8 +28,12 @@ func TestHandler_DeleteUserURLs(t *testing.T) {
 			setupContext: func() context.Context {
 				return context.WithValue(context.Background(), middleware.UserIDContextKey, "user-123")
 			},
-			body:           []string{"short1", "short2", "short3"},
-			overloaded:     false,
+			body: []string{"short1", "short2", "short3"},
+			setupShortener: func(m *handler.MockShortener) {
+				m.EXPECT().
+					DeleteURLsAsync("user-123", []string{"short1", "short2", "short3"}).
+					Return(nil)
+			},
 			expectedStatus: http.StatusAccepted,
 		},
 		{
@@ -49,8 +41,12 @@ func TestHandler_DeleteUserURLs(t *testing.T) {
 			setupContext: func() context.Context {
 				return context.WithValue(context.Background(), middleware.UserIDContextKey, "user-123")
 			},
-			body:           []string{"short1", "short2"},
-			overloaded:     true,
+			body: []string{"short1", "short2"},
+			setupShortener: func(m *handler.MockShortener) {
+				m.EXPECT().
+					DeleteURLsAsync("user-123", []string{"short1", "short2"}).
+					Return(shortener.ErrServiceOverloaded)
+			},
 			expectedStatus: http.StatusServiceUnavailable,
 		},
 		{
@@ -59,7 +55,6 @@ func TestHandler_DeleteUserURLs(t *testing.T) {
 				return context.Background()
 			},
 			body:           []string{"short1"},
-			overloaded:     false,
 			expectedStatus: http.StatusUnauthorized,
 		},
 		{
@@ -68,7 +63,6 @@ func TestHandler_DeleteUserURLs(t *testing.T) {
 				return context.WithValue(context.Background(), middleware.UserIDContextKey, "user-123")
 			},
 			body:           []string{},
-			overloaded:     false,
 			expectedStatus: http.StatusBadRequest,
 		},
 		{
@@ -77,7 +71,6 @@ func TestHandler_DeleteUserURLs(t *testing.T) {
 				return context.WithValue(context.Background(), middleware.UserIDContextKey, "user-123")
 			},
 			body:           "invalid",
-			overloaded:     false,
 			expectedStatus: http.StatusBadRequest,
 		},
 	}
@@ -88,12 +81,12 @@ func TestHandler_DeleteUserURLs(t *testing.T) {
 			r := httptest.NewRequest(http.MethodDelete, "/api/user/urls", bytes.NewReader(bodyBytes))
 			r = r.WithContext(tt.setupContext())
 
-			shortenerMock := &mockShortenerOverloaded{
-				mockShortener: newMockShortener(),
-				overloaded:    tt.overloaded,
+			shortenerMock := handler.NewMockShortener(t)
+			if tt.setupShortener != nil {
+				tt.setupShortener(shortenerMock)
 			}
 
-			h := handler.NewHandler(shortenerMock, newMockPingerOk(), newNoopAuditor())
+			h := handler.NewHandler(shortenerMock, newPingerOk(t), newNoopAuditor(t))
 			rr := httptest.NewRecorder()
 
 			h.DeleteUserURLs(rr, r)

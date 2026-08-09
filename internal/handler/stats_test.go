@@ -10,15 +10,17 @@ import (
 	"Ustasjs/yp-url-shortener/internal/model"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 )
 
 func TestHandler_GetInternalStats(t *testing.T) {
-	m := newMockShortener()
-	m.urls["abc123"] = "https://example.com"
-	m.urls["def456"] = "https://example.org"
+	shortener := handler.NewMockShortener(t)
+	shortener.EXPECT().
+		GetStats(mock.Anything).
+		Return(model.StatsResponse{URLs: 2, Users: 1}, nil)
 
-	h := handler.NewHandler(m, newMockPingerOk(), newNoopAuditor())
+	h := handler.NewHandler(shortener, newPingerOk(t), newNoopAuditor(t))
 
 	r := httptest.NewRequest(http.MethodGet, "/api/internal/stats", nil)
 	rr := httptest.NewRecorder()

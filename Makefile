@@ -16,6 +16,10 @@ test:
 lint:
 	golangci-lint run ./...
 
+.PHONY: mocks
+mocks:
+	go run github.com/vektra/mockery/v3@v3.7.2
+
 .PHONY: proto-tools
 proto-tools:
 	go install google.golang.org/protobuf/cmd/protoc-gen-go@v1.36.11

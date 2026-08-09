@@ -12,6 +12,8 @@ import (
 	"Ustasjs/yp-url-shortener/internal/middleware"
 	"Ustasjs/yp-url-shortener/internal/repository"
 	"Ustasjs/yp-url-shortener/internal/service/shortener"
+
+	"github.com/stretchr/testify/mock"
 )
 
 const exampleBaseURL = "http://localhost:8080"
@@ -151,7 +153,10 @@ func ExampleHandler_DeleteUserURLs() {
 // ExampleHandler_GetDBPing reports the availability of the configured database
 // through GET /ping, responding with 200 OK when the database is reachable.
 func ExampleHandler_GetDBPing() {
-	h := handler.NewHandler(nil, newMockPingerOk(), nil)
+	pinger := &handler.MockPinger{}
+	pinger.EXPECT().PingContext(mock.Anything).Return(nil)
+
+	h := handler.NewHandler(nil, pinger, nil)
 
 	req := httptest.NewRequest(http.MethodGet, "/ping", nil)
 	rec := httptest.NewRecorder()
