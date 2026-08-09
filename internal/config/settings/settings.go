@@ -9,6 +9,7 @@ import (
 )
 
 type ServerAddress string
+type GRPCAddress string
 type BaseURL string
 type FileStoragePath string
 type DatabaseDSN string
@@ -16,9 +17,11 @@ type AuditFile string
 type AuditURL string
 type TLSCertFile string
 type TLSKeyFile string
+type TrustedSubnet string
 
 type Settings struct {
 	ServerAddress   ServerAddress
+	GRPCAddress     GRPCAddress
 	BaseURL         BaseURL
 	LogLevel        zap.AtomicLevel
 	FileStoragePath FileStoragePath
@@ -28,6 +31,7 @@ type Settings struct {
 	EnableHTTPS     bool
 	TLSCertFile     TLSCertFile
 	TLSKeyFile      TLSKeyFile
+	TrustedSubnet   TrustedSubnet
 }
 
 func InitSettings() (*Settings, error) {
@@ -48,6 +52,9 @@ func InitSettings() (*Settings, error) {
 	if err := initServerAddress(settings, cfg); err != nil {
 		return settings, err
 	}
+	if err := initGRPCAddress(settings, cfg); err != nil {
+		return settings, err
+	}
 	if err := initBaseURL(settings, cfg); err != nil {
 		return settings, err
 	}
@@ -63,6 +70,9 @@ func InitSettings() (*Settings, error) {
 	}
 	initEnableHTTPS(settings, cfg)
 	initTLSFiles(settings, cfg)
+	if err := initTrustedSubnet(settings, cfg); err != nil {
+		return settings, err
+	}
 
 	flag.Parse()
 

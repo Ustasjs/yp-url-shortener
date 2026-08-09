@@ -4,7 +4,6 @@ package handler
 import (
 	"context"
 
-	"Ustasjs/yp-url-shortener/internal/audit"
 	"Ustasjs/yp-url-shortener/internal/model"
 )
 
@@ -24,6 +23,8 @@ type Shortener interface {
 	// DeleteURLsAsync schedules the asynchronous deletion of the given short IDs
 	// owned by userID.
 	DeleteURLsAsync(userID string, shortIDs []string) error
+	// GetStats returns the service-wide number of shortened URLs and users.
+	GetStats(ctx context.Context) (model.StatsResponse, error)
 }
 
 // Pinger reports whether the underlying storage (typically the database) is
@@ -32,23 +33,35 @@ type Pinger interface {
 	PingContext(ctx context.Context) error
 }
 
-// AuditPublisher publishes audit events produced while handling requests.
-type AuditPublisher interface {
-	Publish(event audit.Event)
+// URLService is the transport-agnostic business logic behind the handlers that
+// shorten, resolve and list URLs
+type URLService interface {
+	// Shorten validates rawURL, stores it for userID and returns the short URL.
+	// It reports repository.ErrConflict if the URL was already shortened, and
+	// urlservice.ErrInvalidURL if rawURL is not an absolute URL.
+	Shorten(ctx context.Context, rawURL string, userID string) (string, error)
+	// Expand returns the original URL stored under id.
+	Expand(ctx context.Context, id string, userID string) (string, error)
+	// ListUserURLs returns every URL created by userID.
+	ListUserURLs(ctx context.Context, userID string) ([]model.UserURLItem, error)
 }
 
 // Handler holds the dependencies shared by all HTTP handlers of the service.
 type Handler struct {
 	shortener Shortener
+	urls      URLService
 	pinger    Pinger
-	auditor   AuditPublisher
 }
 
-// NewHandler returns a Handler that uses the given shortener service, pinger and
-// audit publisher.
+// NewHandler returns a Handler that uses the given shortener service, URL
+// service and pinger.
 //
-// The pinger and auditor dependencies may be nil: GetDBPing then reports that
-// the database is not configured, and audit events are silently dropped.
-func NewHandler(shortener Shortener, pinger Pinger, auditor AuditPublisher) *Handler {
-	return &Handler{shortener: shortener, pinger: pinger, auditor: auditor}
+// The pinger may be nil: GetDBPing then reports that the database is not
+// configured.
+func NewHandler(shortener Shortener, urls URLService, pinger Pinger) *Handler {
+	return &Handler{
+		shortener: shortener,
+		urls:      urls,
+		pinger:    pinger,
+	}
 }

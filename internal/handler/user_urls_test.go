@@ -13,26 +13,16 @@ import (
 	"Ustasjs/yp-url-shortener/internal/service"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 )
-
-func (m *mockShortener) GetUserURLs(_ctx context.Context, userID string) ([]model.UserURLItem, error) {
-	var urls []model.UserURLItem
-	for shortID, originalURL := range m.urls {
-		urls = append(urls, model.UserURLItem{
-			ShortURL:    "http://localhost:8080/" + shortID,
-			OriginalURL: originalURL,
-		})
-	}
-	return urls, nil
-}
 
 func TestHandler_GetUserURLs(t *testing.T) {
 	tests := []struct {
 		name           string
 		setupContext   func() context.Context
 		setupCookie    func(*http.Request)
-		shortener      *mockShortener
+		setupShortener func(*handler.MockShortener)
 		expectedStatus int
 		expectedBody   string
 		checkJSON      bool
@@ -44,7 +34,9 @@ func TestHandler_GetUserURLs(t *testing.T) {
 			},
 			setupCookie: func(r *http.Request) {
 			},
-			shortener:      newMockShortener(),
+			setupShortener: func(m *handler.MockShortener) {
+				m.EXPECT().GetUserURLs(mock.Anything, "new-user-id").Return(nil, nil)
+			},
 			expectedStatus: http.StatusNoContent,
 			expectedBody:   "",
 			checkJSON:      false,
@@ -61,7 +53,9 @@ func TestHandler_GetUserURLs(t *testing.T) {
 					Value: validToken,
 				})
 			},
-			shortener:      newMockShortener(),
+			setupShortener: func(m *handler.MockShortener) {
+				m.EXPECT().GetUserURLs(mock.Anything, "user-123").Return(nil, nil)
+			},
 			expectedStatus: http.StatusNoContent,
 			expectedBody:   "",
 			checkJSON:      false,
@@ -78,11 +72,11 @@ func TestHandler_GetUserURLs(t *testing.T) {
 					Value: validToken,
 				})
 			},
-			shortener: func() *mockShortener {
-				m := newMockShortener()
-				m.urls["abc123"] = "https://example.com"
-				return m
-			}(),
+			setupShortener: func(m *handler.MockShortener) {
+				m.EXPECT().GetUserURLs(mock.Anything, "user-123").Return([]model.UserURLItem{
+					{ShortURL: testShortURL, OriginalURL: "https://example.com"},
+				}, nil)
+			},
 			expectedStatus: http.StatusOK,
 			checkJSON:      true,
 		},
@@ -97,7 +91,6 @@ func TestHandler_GetUserURLs(t *testing.T) {
 					Value: "invalid-token",
 				})
 			},
-			shortener:      newMockShortener(),
 			expectedStatus: http.StatusUnauthorized,
 			expectedBody:   "Unauthorized\n",
 			checkJSON:      false,
@@ -114,7 +107,6 @@ func TestHandler_GetUserURLs(t *testing.T) {
 					Value: validToken,
 				})
 			},
-			shortener:      newMockShortener(),
 			expectedStatus: http.StatusUnauthorized,
 			expectedBody:   "Unauthorized\n",
 			checkJSON:      false,
@@ -127,8 +119,11 @@ func TestHandler_GetUserURLs(t *testing.T) {
 			r = r.WithContext(tt.setupContext())
 			tt.setupCookie(r)
 
-			pinger := newMockPingerOk()
-			h := handler.NewHandler(tt.shortener, pinger, newNoopAuditor())
+			shortener := handler.NewMockShortener(t)
+			if tt.setupShortener != nil {
+				tt.setupShortener(shortener)
+			}
+			h := newTestHandler(t, shortener, &auditRecorder{})
 
 			rr := httptest.NewRecorder()
 

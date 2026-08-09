@@ -10,9 +10,9 @@ import (
 // relevantEnv lists every environment variable the settings package reads, so a
 // test can start from a clean, predictable environment.
 var relevantEnv = []string{
-	"SERVER_ADDRESS", "BASE_URL", "DATABASE_DSN", "FILE_STORAGE_PATH",
-	"LOG_LEVEL", "ENABLE_HTTPS", "AUDIT_FILE", "AUDIT_URL",
-	"TLS_CERT_FILE", "TLS_KEY_FILE", "CONFIG",
+	"SERVER_ADDRESS", "GRPC_ADDRESS", "BASE_URL", "DATABASE_DSN",
+	"FILE_STORAGE_PATH", "LOG_LEVEL", "ENABLE_HTTPS", "AUDIT_FILE",
+	"AUDIT_URL", "TLS_CERT_FILE", "TLS_KEY_FILE", "CONFIG", "TRUSTED_SUBNET",
 }
 
 // setupSettings gives each case a fresh flag set and argv (InitSettings

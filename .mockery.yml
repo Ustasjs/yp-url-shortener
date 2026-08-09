@@ -1,0 +1,12 @@
+template: testify
+# Mocks live next to the interface they mock, in a _test.go file: they are part
+# of the test binary only and stay out of the production build.
+dir: "{{.InterfaceDir}}"
+filename: mocks_test.go
+pkgname: "{{.SrcPackageName}}"
+structname: "{{.Mock}}{{.InterfaceName}}"
+packages:
+  Ustasjs/yp-url-shortener/internal/handler:
+    interfaces:
+      Shortener:
+      Pinger:
