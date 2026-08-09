@@ -21,7 +21,6 @@ import (
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
 	"google.golang.org/grpc/test/bufconn"
-	"google.golang.org/protobuf/types/known/emptypb"
 )
 
 const (
@@ -192,7 +191,7 @@ func TestListUserURLs(t *testing.T) {
 		}}
 		client := newTestClient(t, urls, &fakeUserRepo{userID: testUserID})
 
-		resp, err := client.ListUserURLs(context.Background(), &emptypb.Empty{})
+		resp, err := client.ListUserURLs(context.Background(), &shortenerv1.UserURLsRequest{})
 
 		require.NoError(t, err)
 		require.Len(t, resp.GetUrl(), 2)
@@ -206,7 +205,7 @@ func TestListUserURLs(t *testing.T) {
 	t.Run("no urls", func(t *testing.T) {
 		client := newTestClient(t, &fakeURLService{}, &fakeUserRepo{userID: testUserID})
 
-		resp, err := client.ListUserURLs(context.Background(), &emptypb.Empty{})
+		resp, err := client.ListUserURLs(context.Background(), &shortenerv1.UserURLsRequest{})
 
 		require.NoError(t, err)
 		assert.Empty(t, resp.GetUrl())
@@ -215,7 +214,7 @@ func TestListUserURLs(t *testing.T) {
 	t.Run("storage failure", func(t *testing.T) {
 		client := newTestClient(t, &fakeURLService{listErr: errStorage}, &fakeUserRepo{userID: testUserID})
 
-		_, err := client.ListUserURLs(context.Background(), &emptypb.Empty{})
+		_, err := client.ListUserURLs(context.Background(), &shortenerv1.UserURLsRequest{})
 
 		assert.Equal(t, codes.Internal, status.Code(err))
 	})
@@ -238,7 +237,7 @@ func TestAuthTokenRoundTrip(t *testing.T) {
 
 	urls.gotUserID = ""
 	ctx := metadata.AppendToOutgoingContext(context.Background(), grpcserver.AuthMetadataKey, tokens[0])
-	_, err = client.ListUserURLs(ctx, &emptypb.Empty{})
+	_, err = client.ListUserURLs(ctx, &shortenerv1.UserURLsRequest{})
 
 	require.NoError(t, err)
 	assert.Equal(t, testUserID, urls.gotUserID)

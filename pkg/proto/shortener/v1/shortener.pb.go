@@ -9,7 +9,6 @@ package shortenerv1
 import (
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
-	emptypb "google.golang.org/protobuf/types/known/emptypb"
 	reflect "reflect"
 	sync "sync"
 	unsafe "unsafe"
@@ -250,6 +249,42 @@ func (x *URLData) GetOriginalUrl() string {
 	return ""
 }
 
+type UserURLsRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *UserURLsRequest) Reset() {
+	*x = UserURLsRequest{}
+	mi := &file_shortener_v1_shortener_proto_msgTypes[5]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *UserURLsRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*UserURLsRequest) ProtoMessage() {}
+
+func (x *UserURLsRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_shortener_v1_shortener_proto_msgTypes[5]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use UserURLsRequest.ProtoReflect.Descriptor instead.
+func (*UserURLsRequest) Descriptor() ([]byte, []int) {
+	return file_shortener_v1_shortener_proto_rawDescGZIP(), []int{5}
+}
+
 type UserURLsResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Url           []*URLData             `protobuf:"bytes,1,rep,name=url,proto3" json:"url,omitempty"`
@@ -259,7 +294,7 @@ type UserURLsResponse struct {
 
 func (x *UserURLsResponse) Reset() {
 	*x = UserURLsResponse{}
-	mi := &file_shortener_v1_shortener_proto_msgTypes[5]
+	mi := &file_shortener_v1_shortener_proto_msgTypes[6]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -271,7 +306,7 @@ func (x *UserURLsResponse) String() string {
 func (*UserURLsResponse) ProtoMessage() {}
 
 func (x *UserURLsResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_shortener_v1_shortener_proto_msgTypes[5]
+	mi := &file_shortener_v1_shortener_proto_msgTypes[6]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -284,7 +319,7 @@ func (x *UserURLsResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UserURLsResponse.ProtoReflect.Descriptor instead.
 func (*UserURLsResponse) Descriptor() ([]byte, []int) {
-	return file_shortener_v1_shortener_proto_rawDescGZIP(), []int{5}
+	return file_shortener_v1_shortener_proto_rawDescGZIP(), []int{6}
 }
 
 func (x *UserURLsResponse) GetUrl() []*URLData {
@@ -298,7 +333,7 @@ var File_shortener_v1_shortener_proto protoreflect.FileDescriptor
 
 const file_shortener_v1_shortener_proto_rawDesc = "" +
 	"\n" +
-	"\x1cshortener/v1/shortener.proto\x12\fshortener.v1\x1a\x1bgoogle/protobuf/empty.proto\"%\n" +
+	"\x1cshortener/v1/shortener.proto\x12\fshortener.v1\"%\n" +
 	"\x11URLShortenRequest\x12\x10\n" +
 	"\x03url\x18\x01 \x01(\tR\x03url\",\n" +
 	"\x12URLShortenResponse\x12\x16\n" +
@@ -309,14 +344,15 @@ const file_shortener_v1_shortener_proto_rawDesc = "" +
 	"\x06result\x18\x01 \x01(\tR\x06result\"I\n" +
 	"\aURLData\x12\x1b\n" +
 	"\tshort_url\x18\x01 \x01(\tR\bshortUrl\x12!\n" +
-	"\foriginal_url\x18\x02 \x01(\tR\voriginalUrl\";\n" +
+	"\foriginal_url\x18\x02 \x01(\tR\voriginalUrl\"\x11\n" +
+	"\x0fUserURLsRequest\";\n" +
 	"\x10UserURLsResponse\x12'\n" +
-	"\x03url\x18\x01 \x03(\v2\x15.shortener.v1.URLDataR\x03url2\xf9\x01\n" +
+	"\x03url\x18\x01 \x03(\v2\x15.shortener.v1.URLDataR\x03url2\x80\x02\n" +
 	"\x10ShortenerService\x12O\n" +
 	"\n" +
 	"ShortenURL\x12\x1f.shortener.v1.URLShortenRequest\x1a .shortener.v1.URLShortenResponse\x12L\n" +
-	"\tExpandURL\x12\x1e.shortener.v1.URLExpandRequest\x1a\x1f.shortener.v1.URLExpandResponse\x12F\n" +
-	"\fListUserURLs\x12\x16.google.protobuf.Empty\x1a\x1e.shortener.v1.UserURLsResponseB=Z;Ustasjs/yp-url-shortener/pkg/proto/shortener/v1;shortenerv1b\x06proto3"
+	"\tExpandURL\x12\x1e.shortener.v1.URLExpandRequest\x1a\x1f.shortener.v1.URLExpandResponse\x12M\n" +
+	"\fListUserURLs\x12\x1d.shortener.v1.UserURLsRequest\x1a\x1e.shortener.v1.UserURLsResponseB=Z;Ustasjs/yp-url-shortener/pkg/proto/shortener/v1;shortenerv1b\x06proto3"
 
 var (
 	file_shortener_v1_shortener_proto_rawDescOnce sync.Once
@@ -330,24 +366,24 @@ func file_shortener_v1_shortener_proto_rawDescGZIP() []byte {
 	return file_shortener_v1_shortener_proto_rawDescData
 }
 
-var file_shortener_v1_shortener_proto_msgTypes = make([]protoimpl.MessageInfo, 6)
+var file_shortener_v1_shortener_proto_msgTypes = make([]protoimpl.MessageInfo, 7)
 var file_shortener_v1_shortener_proto_goTypes = []any{
 	(*URLShortenRequest)(nil),  // 0: shortener.v1.URLShortenRequest
 	(*URLShortenResponse)(nil), // 1: shortener.v1.URLShortenResponse
 	(*URLExpandRequest)(nil),   // 2: shortener.v1.URLExpandRequest
 	(*URLExpandResponse)(nil),  // 3: shortener.v1.URLExpandResponse
 	(*URLData)(nil),            // 4: shortener.v1.URLData
-	(*UserURLsResponse)(nil),   // 5: shortener.v1.UserURLsResponse
-	(*emptypb.Empty)(nil),      // 6: google.protobuf.Empty
+	(*UserURLsRequest)(nil),    // 5: shortener.v1.UserURLsRequest
+	(*UserURLsResponse)(nil),   // 6: shortener.v1.UserURLsResponse
 }
 var file_shortener_v1_shortener_proto_depIdxs = []int32{
 	4, // 0: shortener.v1.UserURLsResponse.url:type_name -> shortener.v1.URLData
 	0, // 1: shortener.v1.ShortenerService.ShortenURL:input_type -> shortener.v1.URLShortenRequest
 	2, // 2: shortener.v1.ShortenerService.ExpandURL:input_type -> shortener.v1.URLExpandRequest
-	6, // 3: shortener.v1.ShortenerService.ListUserURLs:input_type -> google.protobuf.Empty
+	5, // 3: shortener.v1.ShortenerService.ListUserURLs:input_type -> shortener.v1.UserURLsRequest
 	1, // 4: shortener.v1.ShortenerService.ShortenURL:output_type -> shortener.v1.URLShortenResponse
 	3, // 5: shortener.v1.ShortenerService.ExpandURL:output_type -> shortener.v1.URLExpandResponse
-	5, // 6: shortener.v1.ShortenerService.ListUserURLs:output_type -> shortener.v1.UserURLsResponse
+	6, // 6: shortener.v1.ShortenerService.ListUserURLs:output_type -> shortener.v1.UserURLsResponse
 	4, // [4:7] is the sub-list for method output_type
 	1, // [1:4] is the sub-list for method input_type
 	1, // [1:1] is the sub-list for extension type_name
@@ -366,7 +402,7 @@ func file_shortener_v1_shortener_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_shortener_v1_shortener_proto_rawDesc), len(file_shortener_v1_shortener_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   6,
+			NumMessages:   7,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

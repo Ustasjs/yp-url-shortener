@@ -15,7 +15,6 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
-	"google.golang.org/protobuf/types/known/emptypb"
 )
 
 // ShortURLHeader carries the existing short URL when ShortenURL fails with
@@ -63,7 +62,7 @@ func (s *ShortenerServer) ExpandURL(ctx context.Context, req *shortenerv1.URLExp
 }
 
 // ListUserURLs returns all URLs of the calling user.
-func (s *ShortenerServer) ListUserURLs(ctx context.Context, _ *emptypb.Empty) (*shortenerv1.UserURLsResponse, error) {
+func (s *ShortenerServer) ListUserURLs(ctx context.Context, _ *shortenerv1.UserURLsRequest) (*shortenerv1.UserURLsResponse, error) {
 	userID, ok := middleware.GetUserIDFromContext(ctx)
 	if !ok {
 		return nil, status.Error(codes.Unauthenticated, "unauthorized")

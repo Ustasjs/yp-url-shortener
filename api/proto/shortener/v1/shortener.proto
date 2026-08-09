@@ -2,8 +2,6 @@ syntax = "proto3";
 
 package shortener.v1;
 
-import "google/protobuf/empty.proto";
-
 option go_package = "Ustasjs/yp-url-shortener/pkg/proto/shortener/v1;shortenerv1";
 
 // ShortenerService is the gRPC version of the HTTP API.
@@ -28,7 +26,7 @@ service ShortenerService {
 
   // ListUserURLs returns all URLs of the caller. Same as GET /api/user/urls.
   // No URLs means an empty list and OK, not an error.
-  rpc ListUserURLs(google.protobuf.Empty) returns (UserURLsResponse);
+  rpc ListUserURLs(UserURLsRequest) returns (UserURLsResponse);
 }
 
 message URLShortenRequest {
@@ -51,6 +49,8 @@ message URLData {
   string short_url = 1;
   string original_url = 2;
 }
+
+message UserURLsRequest {}
 
 message UserURLsResponse {
   repeated URLData url = 1;
