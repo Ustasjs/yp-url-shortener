@@ -91,10 +91,11 @@ func Setup() *App {
 	deleter.Start(3)
 
 	shortenerService := shortener.NewShortener(store, settingsMap.BaseURL, deleter)
+	urls := urlservice.New(shortenerService, notifier)
 
 	r := chi.NewRouter()
 	initMiddleware(r, store)
-	initRoutes(r, settingsMap, handler.NewHandler(shortenerService, db, notifier))
+	initRoutes(r, settingsMap, handler.NewHandler(shortenerService, urls, db))
 
 	srv := &http.Server{
 		Addr:              string(settingsMap.ServerAddress),
@@ -124,9 +125,6 @@ func Setup() *App {
 		srv.TLSConfig = tlsConfig
 	}
 
-	// Both transports share one urlservice, so the business rules and the audit
-	// events cannot drift apart between HTTP and gRPC.
-	urls := urlservice.New(shortenerService, notifier)
 	grpcSrv := grpcserver.New(string(settingsMap.GRPCAddress), urls, store, tlsConfig)
 
 	return &App{

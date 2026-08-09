@@ -123,7 +123,7 @@ func TestHandler_GetUserURLs(t *testing.T) {
 			if tt.setupShortener != nil {
 				tt.setupShortener(shortener)
 			}
-			h := handler.NewHandler(shortener, newPingerOk(t), newNoopAuditor(t))
+			h := newTestHandler(t, shortener, &auditRecorder{})
 
 			rr := httptest.NewRecorder()
 

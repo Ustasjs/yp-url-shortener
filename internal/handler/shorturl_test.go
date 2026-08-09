@@ -14,6 +14,7 @@ import (
 	"Ustasjs/yp-url-shortener/internal/handler"
 	customMiddleware "Ustasjs/yp-url-shortener/internal/middleware"
 	"Ustasjs/yp-url-shortener/internal/repository"
+	"Ustasjs/yp-url-shortener/internal/service/urlservice"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -31,28 +32,23 @@ func newPingerOk(t *testing.T) *handler.MockPinger {
 	return pinger
 }
 
-// newNoopAuditor returns an audit publisher that drops every event, for tests
-// that do not assert on the audit trail.
-func newNoopAuditor(t *testing.T) *handler.MockAuditPublisher {
-	t.Helper()
-
-	auditor := handler.NewMockAuditPublisher(t)
-	auditor.EXPECT().Publish(mock.Anything).Maybe()
-	return auditor
+// auditRecorder is an audit publisher that appends every published event to
+// events. Publish runs in the request goroutine, so the slice is safe to read
+// once the handler has returned.
+type auditRecorder struct {
+	events []audit.Event
 }
 
-// newAuditRecorder returns an audit publisher that appends every published event
-// to the returned slice. Publish runs in the request goroutine, so the slice is
-// safe to read once the handler has returned.
-func newAuditRecorder(t *testing.T) (*handler.MockAuditPublisher, *[]audit.Event) {
+func (r *auditRecorder) Publish(event audit.Event) {
+	r.events = append(r.events, event)
+}
+
+// newTestHandler wires a Handler the way router.Setup does: the handlers and the
+// URL service share one shortener, and the URL service reports to auditor.
+func newTestHandler(t *testing.T, shortener handler.Shortener, auditor urlservice.AuditPublisher) *handler.Handler {
 	t.Helper()
 
-	var events []audit.Event
-	auditor := handler.NewMockAuditPublisher(t)
-	auditor.EXPECT().Publish(mock.Anything).Run(func(event audit.Event) {
-		events = append(events, event)
-	}).Maybe()
-	return auditor, &events
+	return handler.NewHandler(shortener, urlservice.New(shortener, auditor), newPingerOk(t))
 }
 
 func TestHandler_CreateShortURL(t *testing.T) {
@@ -131,7 +127,7 @@ func TestHandler_CreateShortURL(t *testing.T) {
 			if tt.setupShortener != nil {
 				tt.setupShortener(shortener)
 			}
-			h := handler.NewHandler(shortener, newPingerOk(t), newNoopAuditor(t))
+			h := newTestHandler(t, shortener, &auditRecorder{})
 			mux.HandleFunc("/", h.CreateShortURL)
 
 			rr := httptest.NewRecorder()
@@ -203,7 +199,7 @@ func TestHandler_GetShortURLByID(t *testing.T) {
 			if tt.setupShortener != nil {
 				tt.setupShortener(shortener)
 			}
-			h := handler.NewHandler(shortener, newPingerOk(t), newNoopAuditor(t))
+			h := newTestHandler(t, shortener, &auditRecorder{})
 			mux.HandleFunc("/{id}", h.GetShortURLByID)
 
 			rr := httptest.NewRecorder()
@@ -293,7 +289,7 @@ func TestHandler_CreateShortURLJSONApi(t *testing.T) {
 			if tt.setupShortener != nil {
 				tt.setupShortener(shortener)
 			}
-			h := handler.NewHandler(shortener, newPingerOk(t), newNoopAuditor(t))
+			h := newTestHandler(t, shortener, &auditRecorder{})
 			mux.HandleFunc("/api/shorten", h.CreateShortURLJSONApi)
 
 			rr := httptest.NewRecorder()
@@ -322,7 +318,7 @@ func TestHandler_CreateShortURL_Gzip(t *testing.T) {
 	shortener.EXPECT().
 		CreateShortURL(mock.Anything, "https://example.com", mock.Anything).
 		Return(testShortURL, nil)
-	h := handler.NewHandler(shortener, newPingerOk(t), newNoopAuditor(t))
+	h := newTestHandler(t, shortener, &auditRecorder{})
 
 	wrapped := customMiddleware.GzipDecompress(http.HandlerFunc(h.CreateShortURL))
 	mux.Handle("/", wrapped)
@@ -340,8 +336,8 @@ func TestHandler_CreateShortURL_PublishesAuditEvent(t *testing.T) {
 	shortener.EXPECT().
 		CreateShortURL(mock.Anything, "https://example.com", "user-42").
 		Return(testShortURL, nil)
-	auditor, events := newAuditRecorder(t)
-	h := handler.NewHandler(shortener, newPingerOk(t), auditor)
+	auditor := &auditRecorder{}
+	h := newTestHandler(t, shortener, auditor)
 
 	r := httptest.NewRequest(http.MethodPost, "/", strings.NewReader("https://example.com"))
 	ctx := context.WithValue(r.Context(), customMiddleware.UserIDContextKey, "user-42")
@@ -352,23 +348,23 @@ func TestHandler_CreateShortURL_PublishesAuditEvent(t *testing.T) {
 
 	assert.Equal(t, http.StatusCreated, rr.Code)
 
-	assert.Len(t, *events, 1)
-	assert.Equal(t, audit.ActionShorten, (*events)[0].Action)
-	assert.Equal(t, "user-42", (*events)[0].UserID)
-	assert.Equal(t, "https://example.com", (*events)[0].URL)
-	assert.NotZero(t, (*events)[0].Timestamp)
+	assert.Len(t, auditor.events, 1)
+	assert.Equal(t, audit.ActionShorten, auditor.events[0].Action)
+	assert.Equal(t, "user-42", auditor.events[0].UserID)
+	assert.Equal(t, "https://example.com", auditor.events[0].URL)
+	assert.NotZero(t, auditor.events[0].Timestamp)
 }
 
 func TestHandler_CreateShortURL_NoAuditOnError(t *testing.T) {
-	auditor := handler.NewMockAuditPublisher(t)
-	h := handler.NewHandler(handler.NewMockShortener(t), newPingerOk(t), auditor)
+	auditor := &auditRecorder{}
+	h := newTestHandler(t, handler.NewMockShortener(t), auditor)
 
 	r := httptest.NewRequest(http.MethodPost, "/", strings.NewReader("not-a-valid-url"))
 	rr := httptest.NewRecorder()
 	h.CreateShortURL(rr, r)
 
 	assert.Equal(t, http.StatusBadRequest, rr.Code)
-	auditor.AssertNotCalled(t, "Publish")
+	assert.Empty(t, auditor.events)
 }
 
 func TestHandler_CreateShortURLJSONApi_PublishesAuditEvent(t *testing.T) {
@@ -376,8 +372,8 @@ func TestHandler_CreateShortURLJSONApi_PublishesAuditEvent(t *testing.T) {
 	shortener.EXPECT().
 		CreateShortURL(mock.Anything, "https://practicum.yandex.ru/", "user-7").
 		Return(testShortURL, nil)
-	auditor, events := newAuditRecorder(t)
-	h := handler.NewHandler(shortener, newPingerOk(t), auditor)
+	auditor := &auditRecorder{}
+	h := newTestHandler(t, shortener, auditor)
 
 	r := httptest.NewRequest(http.MethodPost, "/api/shorten", strings.NewReader(`{"url":"https://practicum.yandex.ru/"}`))
 	ctx := context.WithValue(r.Context(), customMiddleware.UserIDContextKey, "user-7")
@@ -388,10 +384,10 @@ func TestHandler_CreateShortURLJSONApi_PublishesAuditEvent(t *testing.T) {
 
 	assert.Equal(t, http.StatusCreated, rr.Code)
 
-	assert.Len(t, *events, 1)
-	assert.Equal(t, audit.ActionShorten, (*events)[0].Action)
-	assert.Equal(t, "user-7", (*events)[0].UserID)
-	assert.Equal(t, "https://practicum.yandex.ru/", (*events)[0].URL)
+	assert.Len(t, auditor.events, 1)
+	assert.Equal(t, audit.ActionShorten, auditor.events[0].Action)
+	assert.Equal(t, "user-7", auditor.events[0].UserID)
+	assert.Equal(t, "https://practicum.yandex.ru/", auditor.events[0].URL)
 }
 
 func TestHandler_GetShortURLByID_PublishesAuditEvent(t *testing.T) {
@@ -399,8 +395,8 @@ func TestHandler_GetShortURLByID_PublishesAuditEvent(t *testing.T) {
 	shortener.EXPECT().
 		GetOriginalURL(mock.Anything, "abc").
 		Return("https://example.com/path", nil)
-	auditor, events := newAuditRecorder(t)
-	h := handler.NewHandler(shortener, newPingerOk(t), auditor)
+	auditor := &auditRecorder{}
+	h := newTestHandler(t, shortener, auditor)
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("/{id}", h.GetShortURLByID)
@@ -414,10 +410,10 @@ func TestHandler_GetShortURLByID_PublishesAuditEvent(t *testing.T) {
 
 	assert.Equal(t, http.StatusTemporaryRedirect, rr.Code)
 
-	assert.Len(t, *events, 1)
-	assert.Equal(t, audit.ActionFollow, (*events)[0].Action)
-	assert.Equal(t, "user-9", (*events)[0].UserID)
-	assert.Equal(t, "https://example.com/path", (*events)[0].URL)
+	assert.Len(t, auditor.events, 1)
+	assert.Equal(t, audit.ActionFollow, auditor.events[0].Action)
+	assert.Equal(t, "user-9", auditor.events[0].UserID)
+	assert.Equal(t, "https://example.com/path", auditor.events[0].URL)
 }
 
 func TestHandler_GetShortURLByID_NoAuditOnNotFound(t *testing.T) {
@@ -425,8 +421,8 @@ func TestHandler_GetShortURLByID_NoAuditOnNotFound(t *testing.T) {
 	shortener.EXPECT().
 		GetOriginalURL(mock.Anything, "missing").
 		Return("", repository.ErrRecordNotFound)
-	auditor := handler.NewMockAuditPublisher(t)
-	h := handler.NewHandler(shortener, newPingerOk(t), auditor)
+	auditor := &auditRecorder{}
+	h := newTestHandler(t, shortener, auditor)
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("/{id}", h.GetShortURLByID)
@@ -436,5 +432,5 @@ func TestHandler_GetShortURLByID_NoAuditOnNotFound(t *testing.T) {
 	mux.ServeHTTP(rr, r)
 
 	assert.Equal(t, http.StatusNotFound, rr.Code)
-	auditor.AssertNotCalled(t, "Publish")
+	assert.Empty(t, auditor.events)
 }

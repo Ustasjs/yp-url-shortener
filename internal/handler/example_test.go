@@ -12,6 +12,7 @@ import (
 	"Ustasjs/yp-url-shortener/internal/middleware"
 	"Ustasjs/yp-url-shortener/internal/repository"
 	"Ustasjs/yp-url-shortener/internal/service/shortener"
+	"Ustasjs/yp-url-shortener/internal/service/urlservice"
 
 	"github.com/stretchr/testify/mock"
 )
@@ -30,10 +31,16 @@ func newExampleShortener() *shortener.Shortener {
 	return shortener.NewShortener(store, exampleBaseURL, nil)
 }
 
+// newExampleHandler wires a Handler the way router.Setup does: the handlers and
+// the URL service share one shortener. Audit events are dropped.
+func newExampleHandler(svc *shortener.Shortener) *handler.Handler {
+	return handler.NewHandler(svc, urlservice.New(svc, nil), nil)
+}
+
 // ExampleHandler_CreateShortURL shortens a URL through POST / with a plain-text
 // body. The response is the short URL as text/plain with status 201 Created.
 func ExampleHandler_CreateShortURL() {
-	h := handler.NewHandler(newExampleShortener(), nil, nil)
+	h := newExampleHandler(newExampleShortener())
 
 	req := httptest.NewRequest(http.MethodPost, "/", strings.NewReader("https://practicum.yandex.ru/"))
 	rec := httptest.NewRecorder()
@@ -50,7 +57,7 @@ func ExampleHandler_CreateShortURL() {
 // ExampleHandler_CreateShortURLJSONApi shortens a URL through POST /api/shorten
 // with a JSON body. The response is a JSON object holding the short URL.
 func ExampleHandler_CreateShortURLJSONApi() {
-	h := handler.NewHandler(newExampleShortener(), nil, nil)
+	h := newExampleHandler(newExampleShortener())
 
 	body := strings.NewReader(`{"url":"https://practicum.yandex.ru/"}`)
 	req := httptest.NewRequest(http.MethodPost, "/api/shorten", body)
@@ -69,7 +76,7 @@ func ExampleHandler_CreateShortURLJSONApi() {
 // POST /api/shorten/batch. Each response item carries the caller's
 // correlation_id so requests and responses can be matched.
 func ExampleHandler_CreateShortURLSByBatch() {
-	h := handler.NewHandler(newExampleShortener(), nil, nil)
+	h := newExampleHandler(newExampleShortener())
 
 	body := strings.NewReader(`[{"correlation_id":"1","original_url":"https://practicum.yandex.ru/"},` +
 		`{"correlation_id":"2","original_url":"https://go.dev/"}]`)
@@ -94,7 +101,7 @@ func ExampleHandler_GetShortURLByID() {
 	shortURL, _ := svc.CreateShortURL(context.Background(), "https://practicum.yandex.ru/", "")
 	id := strings.TrimPrefix(shortURL, exampleBaseURL+"/")
 
-	h := handler.NewHandler(svc, nil, nil)
+	h := newExampleHandler(svc)
 	mux := http.NewServeMux()
 	mux.HandleFunc("/{id}", h.GetShortURLByID)
 
@@ -118,7 +125,7 @@ func ExampleHandler_GetUserURLs() {
 	svc := newExampleShortener()
 	_, _ = svc.CreateShortURL(context.Background(), "https://practicum.yandex.ru/", userID)
 
-	h := handler.NewHandler(svc, nil, nil)
+	h := newExampleHandler(svc)
 
 	req := httptest.NewRequest(http.MethodGet, "/api/user/urls", nil)
 	req = req.WithContext(context.WithValue(req.Context(), middleware.UserIDContextKey, userID))
@@ -136,7 +143,7 @@ func ExampleHandler_GetUserURLs() {
 // ExampleHandler_DeleteUserURLs schedules asynchronous deletion of the user's
 // short URLs through DELETE /api/user/urls and immediately returns 202 Accepted.
 func ExampleHandler_DeleteUserURLs() {
-	h := handler.NewHandler(newExampleShortener(), nil, nil)
+	h := newExampleHandler(newExampleShortener())
 
 	body := strings.NewReader(`["abc12345","def67890"]`)
 	req := httptest.NewRequest(http.MethodDelete, "/api/user/urls", body)
@@ -156,7 +163,7 @@ func ExampleHandler_GetDBPing() {
 	pinger := &handler.MockPinger{}
 	pinger.EXPECT().PingContext(mock.Anything).Return(nil)
 
-	h := handler.NewHandler(nil, pinger, nil)
+	h := handler.NewHandler(nil, nil, pinger)
 
 	req := httptest.NewRequest(http.MethodGet, "/ping", nil)
 	rec := httptest.NewRecorder()

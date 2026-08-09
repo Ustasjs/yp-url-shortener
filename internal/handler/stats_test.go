@@ -20,7 +20,7 @@ func TestHandler_GetInternalStats(t *testing.T) {
 		GetStats(mock.Anything).
 		Return(model.StatsResponse{URLs: 2, Users: 1}, nil)
 
-	h := handler.NewHandler(shortener, newPingerOk(t), newNoopAuditor(t))
+	h := newTestHandler(t, shortener, &auditRecorder{})
 
 	r := httptest.NewRequest(http.MethodGet, "/api/internal/stats", nil)
 	rr := httptest.NewRecorder()
