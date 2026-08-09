@@ -1,6 +1,10 @@
-syntax = "proto3";
+edition = "2023";
 
 package shortener.v1;
+
+import "google/protobuf/go_features.proto";
+
+option features.(pb.go).api_level = API_OPAQUE;
 
 option go_package = "Ustasjs/yp-url-shortener/pkg/proto/shortener/v1;shortenerv1";
 

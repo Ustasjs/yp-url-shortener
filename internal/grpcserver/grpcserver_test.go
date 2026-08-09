@@ -21,6 +21,7 @@ import (
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
 	"google.golang.org/grpc/test/bufconn"
+	"google.golang.org/protobuf/proto"
 )
 
 const (
@@ -96,7 +97,7 @@ func TestShortenURL(t *testing.T) {
 		client := newTestClient(t, urls, &fakeUserRepo{userID: testUserID})
 
 		resp, err := client.ShortenURL(context.Background(),
-			&shortenerv1.URLShortenRequest{Url: "https://practicum.yandex.ru"})
+			shortenerv1.URLShortenRequest_builder{Url: proto.String("https://practicum.yandex.ru")}.Build())
 
 		require.NoError(t, err)
 		assert.Equal(t, testShortURL, resp.GetResult())
@@ -108,7 +109,7 @@ func TestShortenURL(t *testing.T) {
 		urls := &fakeURLService{shortenErr: urlservice.ErrInvalidURL}
 		client := newTestClient(t, urls, &fakeUserRepo{userID: testUserID})
 
-		_, err := client.ShortenURL(context.Background(), &shortenerv1.URLShortenRequest{Url: "nope"})
+		_, err := client.ShortenURL(context.Background(), shortenerv1.URLShortenRequest_builder{Url: proto.String("nope")}.Build())
 
 		assert.Equal(t, codes.InvalidArgument, status.Code(err))
 	})
@@ -118,7 +119,7 @@ func TestShortenURL(t *testing.T) {
 		client := newTestClient(t, urls, &fakeUserRepo{userID: testUserID})
 
 		_, err := client.ShortenURL(context.Background(),
-			&shortenerv1.URLShortenRequest{Url: "https://practicum.yandex.ru"})
+			shortenerv1.URLShortenRequest_builder{Url: proto.String("https://practicum.yandex.ru")}.Build())
 
 		assert.Equal(t, codes.Internal, status.Code(err))
 	})
@@ -132,7 +133,7 @@ func TestShortenURLConflictCarriesShortURL(t *testing.T) {
 
 	var header metadata.MD
 	_, err := client.ShortenURL(context.Background(),
-		&shortenerv1.URLShortenRequest{Url: "https://practicum.yandex.ru"},
+		shortenerv1.URLShortenRequest_builder{Url: proto.String("https://practicum.yandex.ru")}.Build(),
 		grpc.Header(&header))
 
 	require.Error(t, err)
@@ -171,7 +172,7 @@ func TestExpandURL(t *testing.T) {
 			urls := &fakeURLService{original: tt.original, expandErr: tt.expandErr}
 			client := newTestClient(t, urls, &fakeUserRepo{userID: testUserID})
 
-			resp, err := client.ExpandURL(context.Background(), &shortenerv1.URLExpandRequest{Id: "test-id"})
+			resp, err := client.ExpandURL(context.Background(), shortenerv1.URLExpandRequest_builder{Id: proto.String("test-id")}.Build())
 
 			assert.Equal(t, tt.wantCode, status.Code(err))
 			if tt.wantCode == codes.OK {
@@ -191,7 +192,7 @@ func TestListUserURLs(t *testing.T) {
 		}}
 		client := newTestClient(t, urls, &fakeUserRepo{userID: testUserID})
 
-		resp, err := client.ListUserURLs(context.Background(), &shortenerv1.UserURLsRequest{})
+		resp, err := client.ListUserURLs(context.Background(), shortenerv1.UserURLsRequest_builder{}.Build())
 
 		require.NoError(t, err)
 		require.Len(t, resp.GetUrl(), 2)
@@ -205,7 +206,7 @@ func TestListUserURLs(t *testing.T) {
 	t.Run("no urls", func(t *testing.T) {
 		client := newTestClient(t, &fakeURLService{}, &fakeUserRepo{userID: testUserID})
 
-		resp, err := client.ListUserURLs(context.Background(), &shortenerv1.UserURLsRequest{})
+		resp, err := client.ListUserURLs(context.Background(), shortenerv1.UserURLsRequest_builder{}.Build())
 
 		require.NoError(t, err)
 		assert.Empty(t, resp.GetUrl())
@@ -214,7 +215,7 @@ func TestListUserURLs(t *testing.T) {
 	t.Run("storage failure", func(t *testing.T) {
 		client := newTestClient(t, &fakeURLService{listErr: errStorage}, &fakeUserRepo{userID: testUserID})
 
-		_, err := client.ListUserURLs(context.Background(), &shortenerv1.UserURLsRequest{})
+		_, err := client.ListUserURLs(context.Background(), shortenerv1.UserURLsRequest_builder{}.Build())
 
 		assert.Equal(t, codes.Internal, status.Code(err))
 	})
@@ -228,7 +229,7 @@ func TestAuthTokenRoundTrip(t *testing.T) {
 
 	var header metadata.MD
 	_, err := client.ShortenURL(context.Background(),
-		&shortenerv1.URLShortenRequest{Url: "https://practicum.yandex.ru"},
+		shortenerv1.URLShortenRequest_builder{Url: proto.String("https://practicum.yandex.ru")}.Build(),
 		grpc.Header(&header))
 	require.NoError(t, err)
 
@@ -237,7 +238,7 @@ func TestAuthTokenRoundTrip(t *testing.T) {
 
 	urls.gotUserID = ""
 	ctx := metadata.AppendToOutgoingContext(context.Background(), grpcserver.AuthMetadataKey, tokens[0])
-	_, err = client.ListUserURLs(ctx, &shortenerv1.UserURLsRequest{})
+	_, err = client.ListUserURLs(ctx, shortenerv1.UserURLsRequest_builder{}.Build())
 
 	require.NoError(t, err)
 	assert.Equal(t, testUserID, urls.gotUserID)

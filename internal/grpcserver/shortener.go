@@ -15,6 +15,7 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/proto"
 )
 
 // ShortURLHeader carries the existing short URL when ShortenURL fails with
@@ -43,7 +44,7 @@ func (s *ShortenerServer) ShortenURL(ctx context.Context, req *shortenerv1.URLSh
 		return nil, status.Error(codes.Internal, "cannot create short url")
 	}
 
-	return &shortenerv1.URLShortenResponse{Result: shortURL}, nil
+	return shortenerv1.URLShortenResponse_builder{Result: proto.String(shortURL)}.Build(), nil
 }
 
 // ExpandURL returns the original URL behind a short id.
@@ -58,7 +59,7 @@ func (s *ShortenerServer) ExpandURL(ctx context.Context, req *shortenerv1.URLExp
 		return nil, status.Error(codes.NotFound, "url not found")
 	}
 
-	return &shortenerv1.URLExpandResponse{Result: originalURL}, nil
+	return shortenerv1.URLExpandResponse_builder{Result: proto.String(originalURL)}.Build(), nil
 }
 
 // ListUserURLs returns all URLs of the calling user.
@@ -76,14 +77,14 @@ func (s *ShortenerServer) ListUserURLs(ctx context.Context, _ *shortenerv1.UserU
 
 	// HTTP answers 204 No Content for a user without URLs. gRPC has nothing like
 	// that, so an empty list with an OK status is the closest match.
-	response := &shortenerv1.UserURLsResponse{Url: make([]*shortenerv1.URLData, 0, len(items))}
+	urls := make([]*shortenerv1.URLData, 0, len(items))
 	for _, item := range items {
-		response.Url = append(response.Url, &shortenerv1.URLData{
-			ShortUrl:    item.ShortURL,
-			OriginalUrl: item.OriginalURL,
-		})
+		urls = append(urls, shortenerv1.URLData_builder{
+			ShortUrl:    proto.String(item.ShortURL),
+			OriginalUrl: proto.String(item.OriginalURL),
+		}.Build())
 	}
-	return response, nil
+	return shortenerv1.UserURLsResponse_builder{Url: urls}.Build(), nil
 }
 
 // conflictError builds the AlreadyExists error for a URL that was shortened
